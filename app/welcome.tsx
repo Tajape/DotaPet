@@ -87,8 +87,8 @@ const TelaOpcoes = () => {
 
     const handleCadastrar = () => {
         console.log('Navegando para Cadastro...');
-        // Navega para a rota que criaremos em seguida (app/register.tsx)
-        //router.push('/register'); 
+        // 🎯 DESCOMENTAR E USAR A ROTA '/register'
+        router.push('/register'); 
     };
 
     const handleGoogleLogin = () => {
