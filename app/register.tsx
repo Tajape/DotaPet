@@ -9,7 +9,7 @@ import {
   StatusBar,
   Alert,
   Image,
-  Dimensions, // Importar Dimensions para padding de segurança
+  ImageSourcePropType,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons'; 
@@ -61,6 +61,10 @@ const RegisterScreen: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  
+  // 🎯 NOVOS ESTADOS para controlar a visibilidade da senha
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
 
   const router = useRouter();
 
@@ -69,7 +73,9 @@ const RegisterScreen: React.FC = () => {
       Alert.alert('Erro', 'As senhas não coincidem!');
       return;
     }
-    Alert.alert('Sucesso', `Cadastro de ${name} efetuado!`);
+    
+    console.log('Dados de Cadastro:', { name, email, password });
+    // Navegação para a Home/Login aqui.
   };
 
   const handleGoogleLogin = () => {
@@ -81,30 +87,67 @@ const RegisterScreen: React.FC = () => {
   };
 
   const handleGoBack = () => {
-    // router.back() é a forma correta de voltar usando Expo Router
     router.back();
   };
+
+  // 🎯 COMPONENTE REUTILIZÁVEL PARA INPUT DE SENHA COM OLHO
+  const PasswordInput = ({ 
+      label, 
+      value, 
+      onChangeText, 
+      placeholder, 
+      isVisible, 
+      toggleVisibility 
+    }: {
+      label: string;
+      value: string;
+      onChangeText: (text: string) => void;
+      placeholder: string;
+      isVisible: boolean;
+      toggleVisibility: () => void;
+    }) => (
+    <>
+      <Text style={styles.label}>{label}</Text>
+      <View style={styles.passwordInputContainer}>
+        <TextInput
+          style={styles.passwordInputField} // Estilo ajustado para acomodar o ícone
+          placeholder={placeholder}
+          placeholderTextColor="#999"
+          value={value}
+          onChangeText={onChangeText}
+          secureTextEntry={!isVisible} // Controlado pelo estado
+        />
+        <TouchableOpacity 
+          style={styles.toggleButton} 
+          onPress={toggleVisibility}
+        >
+          <Ionicons 
+            name={isVisible ? "eye-off" : "eye"} 
+            size={24} 
+            color="#999" 
+          />
+        </TouchableOpacity>
+      </View>
+    </>
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen options={{ headerShown: false }} />
-      {/* Garantimos que a barra de status esteja ok */}
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-      {/* --- Cabeçalho (Header) - Ajustado para visual limpo no topo --- */}
+      {/* --- Cabeçalho CUSTOMIZADO --- */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Cadastre-se</Text>
-        {/* View VAZIA para forçar a centralização do título, mantendo a simetria */}
         <View style={styles.backButtonPlaceholder} />
       </View>
 
       {/* --- Container do Formulário e Ações --- */}
-      {/* Usamos um ScrollView se o conteúdo for muito longo, mas o View basta aqui */}
       <View style={styles.contentContainer}>
-        {/* Inputs... */}
+        {/* Input: Nome */}
         <Text style={styles.label}>Nome</Text>
         <TextInput
           style={styles.input}
@@ -115,6 +158,7 @@ const RegisterScreen: React.FC = () => {
           autoCapitalize="words"
         />
 
+        {/* Input: E-mail */}
         <Text style={styles.label}>E-mail</Text>
         <TextInput
           style={styles.input}
@@ -126,27 +170,27 @@ const RegisterScreen: React.FC = () => {
           autoCapitalize="none"
         />
 
-        <Text style={styles.label}>Senha</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="insira aqui sua senha"
-          placeholderTextColor="#999"
+        {/* 🎯 Input: Senha COM OLHINHO */}
+        <PasswordInput
+          label="Senha"
           value={password}
           onChangeText={setPassword}
-          secureTextEntry
+          placeholder="insira aqui sua senha"
+          isVisible={isPasswordVisible}
+          toggleVisibility={() => setIsPasswordVisible(!isPasswordVisible)}
         />
 
-        <Text style={styles.label}>Confirme sua senha</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="insira aqui sua senha novamente"
-          placeholderTextColor="#999"
+        {/* 🎯 Input: Confirme sua senha COM OLHINHO */}
+        <PasswordInput
+          label="Confirme sua senha"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
-          secureTextEntry
+          placeholder="insira aqui sua senha novamente"
+          isVisible={isConfirmPasswordVisible}
+          toggleVisibility={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
         />
 
-        {/* --- Botão Principal --- */}
+        {/* --- Botão Principal (Entrar/Cadastrar) --- */}
         <TouchableOpacity
           style={styles.loginButton}
           onPress={handleRegister}
@@ -158,7 +202,6 @@ const RegisterScreen: React.FC = () => {
         {/* --- Separador "ou" --- */}
         <View style={styles.separatorContainer}>
           <View style={styles.separatorLine} />
-          {/* Garante que o texto 'ou' está dentro de <Text> (já estava, mas reforçamos a estrutura) */}
           <Text style={styles.separatorText}>ou</Text>
           <View style={styles.separatorLine} />
         </View>
@@ -182,7 +225,7 @@ const RegisterScreen: React.FC = () => {
 };
 
 // =========================================================================
-// 4. ESTILOS (Ajustes de padding e fonte)
+// 4. ESTILOS (Ajustes para o Olhinho)
 // =========================================================================
 
 const styles = StyleSheet.create({
@@ -194,31 +237,29 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     paddingHorizontal: 30,
-    // Adiciona um padding top para o conteúdo começar um pouco abaixo do header
-    paddingTop: 10, 
+    paddingTop: 10,
   },
 
-  // --- Cabeçalho (Header) - AJUSTES PARA VISUAL MAIS LIMPO E ESPAÇOSO ---
+  // --- Cabeçalho ---
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'space-between', 
     paddingHorizontal: 20,
-    paddingTop: 15,    // Mais respiro em cima
-    paddingBottom: 25, // Mais respiro embaixo
-    // Borda inferior opcional se quiser separar visualmente do formulário
-    // borderBottomWidth: 1, 
-    // borderBottomColor: '#eee',
+    paddingTop: 15,
+    paddingBottom: 25,
   },
   backButton: {
-    paddingRight: 10,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
   },
   backButtonPlaceholder: {
-    width: 24, 
-    paddingRight: 10,
+    width: 44, 
+    height: 44,
   },
   headerTitle: {
-    fontSize: 18, // REDUZIDO para 18px para ser mais sutil
+    fontSize: 18, 
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
@@ -230,7 +271,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#333',
-    marginTop: 15, // Reduzido um pouco o padding para deixar mais compacto
+    marginTop: 15,
     marginBottom: 8,
   },
   input: {
@@ -241,7 +282,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     fontSize: 16,
     backgroundColor: '#fff',
+    // Não precisa de margem inferior extra aqui
   },
+  
+  // 🎯 NOVOS ESTILOS PARA INPUT COM SENHA
+  passwordInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 50,
+    borderColor: '#CCC',
+    borderWidth: 1,
+    borderRadius: 5,
+    backgroundColor: '#fff',
+  },
+  passwordInputField: {
+    flex: 1, // Permite que o campo ocupe todo o espaço menos o ícone
+    paddingHorizontal: 15,
+    fontSize: 16,
+  },
+  toggleButton: {
+    paddingHorizontal: 15, // Espaçamento para o toque
+    height: '100%',
+    justifyContent: 'center',
+  },
+  // ------------------------------------
 
   // --- Botão Principal ---
   loginButton: {
@@ -260,7 +324,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
 
-  // --- Separador "ou" ---
+  // --- Separador e Social Login (Manter) ---
   separatorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -277,8 +341,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
   },
-
-  // --- Login Social ---
   socialLoginArea: {
     width: '100%',
   },
