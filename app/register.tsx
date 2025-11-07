@@ -8,89 +8,56 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
-  Image,
-  ImageSourcePropType,
+  ScrollView,
 } from 'react-native';
-import { useRouter, Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons'; 
 
-// --- ATENÇÃO: IMPORTAÇÃO DAS IMAGENS/ÍCONES ---
-const googleIconSource = require('../assets/images/icone-google.png');
-const facebookIconSource = require('../assets/images/icone-facebook.png');
-// ------------------------------------------------
-
 // =========================================================================
-// 1. COMPONENTES DE ÍCONES (Imagens Locais)
+// 1. COMPONENTE PRINCIPAL (RegisterScreen)
 // =========================================================================
 
-const GoogleIcon = () => (
-  <Image source={googleIconSource} style={styles.socialIconImage} />
-);
-
-const FacebookIcon = () => (
-  <Image source={facebookIconSource} style={styles.socialIconImage} />
-);
-
-// =========================================================================
-// 2. INTERFACES E COMPONENTE REUTILIZÁVEL (SocialButton)
-// =========================================================================
-
-interface SocialButtonProps {
-  IconComponent: React.FC;
-  title: string;
-  onPress: () => void;
-}
-
-const SocialButton: React.FC<SocialButtonProps> = ({
-  IconComponent,
-  title,
-  onPress,
-}) => (
-  <TouchableOpacity style={styles.socialButton} onPress={onPress}>
-    <IconComponent />
-    <Text style={styles.socialButtonText}>{title}</Text>
-  </TouchableOpacity>
-);
-
-// =========================================================================
-// 3. COMPONENTE PRINCIPAL (RegisterScreen)
-// =========================================================================
-
-const RegisterScreen: React.FC = () => {
+const RegisterScreen = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
-  // 🎯 NOVOS ESTADOS para controlar a visibilidade da senha
+  // Estados para visibilidade da senha (mantendo a funcionalidade do "olhinho")
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
 
   const router = useRouter();
 
+  // --- Função de Registro (Ação do Botão "Entrar") ---
   const handleRegister = () => {
+    // 1. Validações básicas
+    if (!name || !email || !password || !confirmPassword) {
+      Alert.alert('Atenção', 'Por favor, preencha todos os campos.');
+      return;
+    }
+    if (password.length < 6) {
+      Alert.alert('Atenção', 'A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
     if (password !== confirmPassword) {
       Alert.alert('Erro', 'As senhas não coincidem!');
       return;
     }
+
+    // 2. Lógica de registro (Simulação)
+    console.log('Tentativa de registro bem-sucedida.');
     
-    console.log('Dados de Cadastro:', { name, email, password });
-    // Navegação para a Home/Login aqui.
-  };
-
-  const handleGoogleLogin = () => {
-    console.log('Continuar com Google acionado!');
-  };
-
-  const handleFacebookLogin = () => {
-    console.log('Continuar com Facebook acionado!');
+    // 3. Redireciona para a tela de Configuração de Perfil
+    // Rota: /profile-setup
+    router.replace('/user-profile');
   };
 
   const handleGoBack = () => {
     router.back();
   };
 
-  // 🎯 COMPONENTE REUTILIZÁVEL PARA INPUT DE SENHA COM OLHO
+  // 🎯 Componente de Input de Senha Reutilizável
   const PasswordInput = ({ 
       label, 
       value, 
@@ -110,12 +77,12 @@ const RegisterScreen: React.FC = () => {
       <Text style={styles.label}>{label}</Text>
       <View style={styles.passwordInputContainer}>
         <TextInput
-          style={styles.passwordInputField} // Estilo ajustado para acomodar o ícone
+          style={styles.passwordInputField}
           placeholder={placeholder}
           placeholderTextColor="#999"
           value={value}
           onChangeText={onChangeText}
-          secureTextEntry={!isVisible} // Controlado pelo estado
+          secureTextEntry={!isVisible}
         />
         <TouchableOpacity 
           style={styles.toggleButton} 
@@ -136,96 +103,98 @@ const RegisterScreen: React.FC = () => {
       <Stack.Screen options={{ headerShown: false }} />
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-      {/* --- Cabeçalho CUSTOMIZADO --- */}
+      {/* --- Cabeçalho --- */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Cadastre-se</Text>
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitle}>Cadastre-se</Text>
+        </View>
         <View style={styles.backButtonPlaceholder} />
       </View>
 
-      {/* --- Container do Formulário e Ações --- */}
-      <View style={styles.contentContainer}>
-        {/* Input: Nome */}
-        <Text style={styles.label}>Nome</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Digite seu nome"
-          placeholderTextColor="#999"
-          value={name}
-          onChangeText={setName}
-          autoCapitalize="words"
-        />
-
-        {/* Input: E-mail */}
-        <Text style={styles.label}>E-mail</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Cadastre seu email"
-          placeholderTextColor="#999"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-
-        {/* 🎯 Input: Senha COM OLHINHO */}
-        <PasswordInput
-          label="Senha"
-          value={password}
-          onChangeText={setPassword}
-          placeholder="insira aqui sua senha"
-          isVisible={isPasswordVisible}
-          toggleVisibility={() => setIsPasswordVisible(!isPasswordVisible)}
-        />
-
-        {/* 🎯 Input: Confirme sua senha COM OLHINHO */}
-        <PasswordInput
-          label="Confirme sua senha"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          placeholder="insira aqui sua senha novamente"
-          isVisible={isConfirmPasswordVisible}
-          toggleVisibility={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
-        />
-
-        {/* --- Botão Principal (Entrar/Cadastrar) --- */}
-        <TouchableOpacity
-          style={styles.loginButton}
-          onPress={handleRegister}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.loginButtonText}>Entrar</Text>
-        </TouchableOpacity>
-
-        {/* --- Separador "ou" --- */}
-        <View style={styles.separatorContainer}>
-          <View style={styles.separatorLine} />
-          <Text style={styles.separatorText}>ou</Text>
-          <View style={styles.separatorLine} />
-        </View>
-
-        {/* --- Botões de Login Social --- */}
-        <View style={styles.socialLoginArea}>
-          <SocialButton
-            IconComponent={GoogleIcon}
-            title="Continuar com Google"
-            onPress={handleGoogleLogin}
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.contentContainer}>
+          
+          {/* Input: Nome */}
+          <Text style={styles.label}>Nome</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Digite seu nome"
+            placeholderTextColor="#999"
+            value={name}
+            onChangeText={setName}
+            autoCapitalize="words"
           />
-          <SocialButton
-            IconComponent={FacebookIcon}
-            title="Continuar com Facebook"
-            onPress={handleFacebookLogin}
+
+          {/* Input: E-mail */}
+          <Text style={styles.label}>E-mail</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Cadastre seu email"
+            placeholderTextColor="#999"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
           />
+
+          {/* Input: Senha */}
+          <PasswordInput
+            label="Senha"
+            value={password}
+            onChangeText={setPassword}
+            placeholder="insira aqui sua senha"
+            isVisible={isPasswordVisible}
+            toggleVisibility={() => setIsPasswordVisible(!isPasswordVisible)}
+          />
+
+          {/* Input: Confirme sua senha */}
+          <PasswordInput
+            label="Confirme sua senha"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            placeholder="insira aqui sua senha novamente"
+            isVisible={isConfirmPasswordVisible}
+            toggleVisibility={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
+          />
+
+          {/* Botão Entrar (Finalizar Cadastro) */}
+          <TouchableOpacity 
+            style={styles.registerButton} 
+            onPress={handleRegister}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.registerButtonText}>Entrar</Text>
+          </TouchableOpacity>
+
+          {/* Linha separadora "ou" */}
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>ou</Text>
+            <View style={styles.dividerLine} />
+          </View>
+          
+          {/* Botões de Login Social (Usando Ionicons como placeholder) */}
+          <TouchableOpacity style={[styles.socialButton, { marginBottom: 15 }]} activeOpacity={0.8}>
+            <Ionicons name="logo-google" size={20} color="#333" />
+            <Text style={styles.socialButtonText}>Continuar com Google</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.socialButton} activeOpacity={0.8}>
+            <Ionicons name="logo-facebook" size={20} color="#333" />
+            <Text style={styles.socialButtonText}>Continuar com Facebook</Text>
+          </TouchableOpacity>
+
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
 // =========================================================================
-// 4. ESTILOS (Ajustes para o Olhinho)
+// 2. ESTILIZAÇÃO
 // =========================================================================
 
 const styles = StyleSheet.create({
@@ -234,20 +203,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  contentContainer: {
-    flex: 1,
-    paddingHorizontal: 30,
-    paddingTop: 10,
+  scrollContent: {
+    flexGrow: 1,
   },
-
+  contentContainer: {
+    paddingHorizontal: 30,
+    paddingTop: 10, 
+    paddingBottom: 40,
+  },
+  
   // --- Cabeçalho ---
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between', 
-    paddingHorizontal: 20,
-    paddingTop: 15,
-    paddingBottom: 25,
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+    paddingTop: 30, 
+    paddingBottom: 35, 
+    backgroundColor: '#fff',
   },
   backButton: {
     width: 44,
@@ -257,16 +230,20 @@ const styles = StyleSheet.create({
   backButtonPlaceholder: {
     width: 44, 
     height: 44,
+    opacity: 0,
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18, 
+    fontSize: 24, 
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    flex: 1,
   },
 
-  // --- Formulário (Inputs) ---
+  // --- Inputs e Labels ---
   label: {
     fontSize: 16,
     fontWeight: '500',
@@ -282,10 +259,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     fontSize: 16,
     backgroundColor: '#fff',
-    // Não precisa de margem inferior extra aqui
   },
   
-  // 🎯 NOVOS ESTILOS PARA INPUT COM SENHA
+  // --- Inputs de Senha (Com Olhinho) ---
   passwordInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -296,75 +272,66 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   passwordInputField: {
-    flex: 1, // Permite que o campo ocupe todo o espaço menos o ícone
+    flex: 1, 
     paddingHorizontal: 15,
     fontSize: 16,
   },
   toggleButton: {
-    paddingHorizontal: 15, // Espaçamento para o toque
+    paddingHorizontal: 15, 
     height: '100%',
     justifyContent: 'center',
   },
-  // ------------------------------------
-
+  
   // --- Botão Principal ---
-  loginButton: {
+  registerButton: {
     width: '100%',
     paddingVertical: 15,
     borderRadius: 5,
-    backgroundColor: '#FFC837',
+    backgroundColor: '#FFC837', 
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 30,
-    marginBottom: 40,
   },
-  loginButtonText: {
+  registerButtonText: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
   },
-
-  // --- Separador e Social Login (Manter) ---
-  separatorContainer: {
+  
+  // --- Separador "ou" ---
+  dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
-    marginBottom: 40,
+    marginVertical: 30,
   },
-  separatorLine: {
+  dividerLine: {
     flex: 1,
     height: 1,
     backgroundColor: '#DDD',
   },
-  separatorText: {
+  dividerText: {
     marginHorizontal: 15,
     fontSize: 16,
     color: '#999',
   },
-  socialLoginArea: {
-    width: '100%',
-  },
+
+  // --- Botões Sociais ---
   socialButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '100%',
-    paddingVertical: 15,
+    height: 50,
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: '#AAAAAA',
-    marginBottom: 15,
+    borderColor: '#CCC',
     backgroundColor: '#fff',
-  },
-  socialIconImage: {
-    width: 24,
-    height: 24,
-    marginRight: 15,
+    paddingHorizontal: 20,
   },
   socialButtonText: {
     fontSize: 16,
-    color: '#333',
     fontWeight: '500',
+    color: '#333',
+    marginLeft: 10,
   },
 });
 
