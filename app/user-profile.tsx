@@ -14,7 +14,8 @@ import {
   Image, // Importado o componente Image
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import Ionicons from '@expo/vector-icons/Ionicons'; 
+// Trocando a importação direta do Ionicons para garantir a compatibilidade de ambiente
+import Ionicons from 'react-native-vector-icons/Ionicons'; 
 import * as ImagePicker from 'expo-image-picker'; 
 
 // =========================================================================
@@ -22,11 +23,11 @@ import * as ImagePicker from 'expo-image-picker';
 // =========================================================================
 
 const UserProfileScreen = () => {
-  const [username, setUsername] = useState(''); 
-  const [email, setEmail] = useState(''); 
-  const [phone, setPhone] = useState('');
-  const [location, setLocation] = useState('');
-  const [profileImage, setProfileImage] = useState(null);
+  const [username, setUsername] = useState<string>(''); 
+  const [email, setEmail] = useState<string>(''); 
+  const [phone, setPhone] = useState<string>('');
+  const [location, setLocation] = useState<string>('');
+  const [profileImage, setProfileImage] = useState<string | null>(null);
 
   const router = useRouter();
 
@@ -65,14 +66,16 @@ const UserProfileScreen = () => {
     
     Alert.alert('Sucesso!', 'Seu perfil foi configurado com sucesso. Vamos adotar!');
     
-    router.replace('/home'); 
+    // CORREÇÃO: Redireciona para o arquivo homeScreen.tsx
+    router.replace('/homeScreen' as never); 
   };
 
   const handleGoBack = () => {
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.replace('/'); 
+      // CORREÇÃO: Redireciona para o arquivo homeScreen.tsx (ou a rota inicial '/')
+      router.replace('/homeScreen' as never); 
     }
   };
 

@@ -8,18 +8,21 @@ import {
   Dimensions,
   Image,
   ImageSourcePropType,
+  Alert, // Adicionando Alert para feedback de erro/sucesso
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Ionicons from '@expo/vector-icons/Ionicons'; 
+// Trocando a importação direta do Ionicons para garantir a compatibilidade de ambiente
+import Ionicons from 'react-native-vector-icons/Ionicons'; 
 
 // Define a largura da tela para uso em estilos responsivos (Embora não usado diretamente no estilo abaixo, é útil manter)
 const { width } = Dimensions.get('window');
 
 // --- ATENÇÃO: IMPORTAÇÃO DAS IMAGENS/ÍCONES ---
 // Use os caminhos corretos para seus assets
-const googleIconSource = require('../assets/images/icone-google.png');
-const facebookIconSource = require('../assets/images/icone-facebook.png');
+// Usando 'any' temporariamente se o caminho exato não for resolvido automaticamente pelo ambiente
+const googleIconSource: ImageSourcePropType = require('../assets/images/icone-google.png');
+const facebookIconSource: ImageSourcePropType = require('../assets/images/icone-facebook.png');
 // ------------------------------------------------
 
 // =========================================================================
@@ -70,13 +73,23 @@ const TelaLogin = () => {
 
   // --- Funções de Ação ---
   const handleLogin = () => {
+    // 1. Validação simples para demonstração
+    if (!email || !password) {
+      Alert.alert('Erro de Login', 'Por favor, insira e-mail e senha.');
+      return;
+    }
+
+    // 2. Lógica real de autenticação (simulada)
     console.log('Tentativa de Login:', { email, password });
-    // Lógica real de autenticação
+    
+    // 3. REDIRECIONAMENTO CORRIGIDO: Leva para a tela homeScreen
+    // Usando 'as never' para tipagem do expo-router
+    router.replace('/homeScreen' as never);
   };
 
   const handleForgotPassword = () => {
     console.log('Navegando para Esqueceu Senha');
-    router.push('/forgot-password');
+    router.push('/forgot-password' as never);
   };
   
   const handleGoBack = () => {
