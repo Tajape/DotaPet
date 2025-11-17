@@ -11,7 +11,6 @@ import {
   Image,
   Platform,
 } from 'react-native';
-// Adaptado para resolver o problema de compilação
 import { Stack, useRouter } from 'expo-router'; 
 import Ionicons from 'react-native-vector-icons/Ionicons'; 
 
@@ -25,7 +24,6 @@ interface TabItemProps {
 
 // Dados de perfil simulados
 const MOCK_USER_PROFILE = {
-  // URL de placeholder, altere para a imagem real do usuário
   imageUri: 'https://placehold.co/100x100/A0A0A0/FFFFFF?text=EU', 
   username: 'SeuUsuário',
 };
@@ -35,31 +33,23 @@ const MOCK_USER_PROFILE = {
 // =========================================================================
 
 const HomeScreen = () => {
-  const [searchQuery, setSearchQuery] = useState('');
+  // Mantemos o state, mas ele será pouco usado na Home após a correção
+  const [searchQuery, setSearchQuery] = useState(''); 
   const router = useRouter();
+  const currentRoute = '/homeScreen'; 
 
-  // Função Placeholder para navegação do Menu Inferior
   const handleTabPress = (route: string) => {
-    console.log(`Navegar para: ${route}`);
-    
-    if (route === '/register-pet') {
-      // O botão central leva para o cadastro
-      // Usando o router.push para ir para a nova tela de cadastro (register-pet.tsx)
+    // A navegação da TabBar e da barra de pesquisa rápida
+    if (route === '/searchScreen') {
+      router.push('/searchScreen' as never); 
+    } else if (route === '/register-pet') {
       router.push('/register-pet' as never); 
     } else if (route === '/user-profile') {
-      // Navegação simulada para o perfil do usuário
       router.push('/user-profile' as never);
-    } else {
-      // router.push(route as never);
     }
-  };
-
-  // Funções de Ação do Header
-  const handleSearch = () => {
-    console.log('Pesquisar por:', searchQuery);
+    // Adicione outras rotas conforme necessário
   };
   
-  // Componente auxiliar para renderizar os itens da Tab Bar
   const TabItem: React.FC<TabItemProps> = ({ name, label, route, isFocused }) => (
     <TouchableOpacity
       key={route}
@@ -80,8 +70,7 @@ const HomeScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen options={{ headerShown: false }} />
-      {/* Ajusta a StatusBar para que o texto fique legível sobre o fundo branco/claro */}
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" /> 
 
       {/* ------------------ 2. CABEÇALHO (FIXO) ------------------ */}
       <View style={styles.header}>
@@ -93,20 +82,18 @@ const HomeScreen = () => {
           />
         </TouchableOpacity>
 
-        {/* Barra de Pesquisa */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Pesquisar por nome, raça ou localização..."
-            placeholderTextColor="#888"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onSubmitEditing={handleSearch}
-          />
-          <TouchableOpacity onPress={handleSearch} style={styles.searchIconContainer}>
-            <Ionicons name="search" size={24} color="#333" />
-          </TouchableOpacity>
-        </View>
+        {/* Barra de Pesquisa (AGORA UM BOTÃO DE NAVEGAÇÃO LIMPO) */}
+        <TouchableOpacity 
+          style={styles.searchButton} 
+          onPress={() => handleTabPress('/searchScreen')} // Navega ao tocar
+          activeOpacity={0.8}
+        >
+          <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+          <Text style={styles.searchPlaceholder}>
+            Pesquisar por nome, raça ou localização...
+          </Text>
+        </TouchableOpacity>
+        
       </View>
 
       {/* ------------------ 3. CONTEÚDO PRINCIPAL (SCROLLABLE) ------------------ */}
@@ -118,19 +105,13 @@ const HomeScreen = () => {
           
           <Text style={styles.sectionTitle}>Pets Prontos para Adoção</Text>
           
-          {/* PLACEHOLDER: ESPAÇO PARA OS CARDS DOS ANIMAIS */}
           <View style={styles.petListPlaceholder}>
             <Ionicons name="paw" size={40} color="#FFC837" />
             <Text style={styles.placeholderText}>
               Este é o contêiner para os seus cards de animais!
             </Text>
-            <Text style={styles.placeholderText}>
-              Implemente o componente de card aqui (por exemplo, dentro de um FlatList).
-            </Text>
-            {/* Exemplo de card de pet do seu design:  */}
           </View>
           
-          {/* Adiciona espaço para testar a rolagem sem os cards */}
           <View style={{ height: 600 }} />
           
         </View>
@@ -138,13 +119,11 @@ const HomeScreen = () => {
 
       {/* ------------------ 4. BARRA DE NAVEGAÇÃO INFERIOR (FIXA) ------------------ */}
       <View style={styles.tabBarContainer}>
-        {/* Início (Focado) */}
-        <TabItem name="home-outline" label="Início" route="/homeScreen" isFocused={true} />
+        <TabItem name="home-outline" label="Início" route="/homeScreen" isFocused={currentRoute === '/homeScreen'} />
         
-        {/* Pesquisar */}
-        <TabItem name="search-outline" label="Pesquisar" route="/explore" isFocused={false} />
+        {/* Pesquisar: Rota para SearchScreen */}
+        <TabItem name="search-outline" label="Pesquisar" route="/searchScreen" isFocused={false} />
         
-        {/* Botão Central de Adicionar (Maior e Redondo) */}
         <TouchableOpacity 
           style={styles.addButton} 
           onPress={() => handleTabPress('/register-pet')}
@@ -152,10 +131,7 @@ const HomeScreen = () => {
           <Ionicons name="add" size={32} color="#333" />
         </TouchableOpacity>
 
-        {/* Favoritos */}
         <TabItem name="heart-outline" label="Favoritos" route="/favorites" isFocused={false} />
-        
-        {/* Perfil */}
         <TabItem name="person-outline" label="Perfil" route="/user-profile" isFocused={false} />
       </View>
       
@@ -164,7 +140,7 @@ const HomeScreen = () => {
 };
 
 // =========================================================================
-// 5. ESTILIZAÇÃO
+// 5. ESTILIZAÇÃO (CORRIGIDA E OTIMIZADA)
 // =========================================================================
 
 const styles = StyleSheet.create({
@@ -174,7 +150,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   scrollContent: {
-    // Garante que o conteúdo role e tenha espaço acima da Tab Bar
     paddingBottom: 80 + (Platform.OS === 'ios' ? 20 : 0), 
   },
   mainContent: {
@@ -190,7 +165,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
-    paddingTop: Platform.OS === 'android' ? 10 : 0, // Ajuste para Android
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 10,
   },
   profileButton: {
     marginRight: 10,
@@ -200,31 +175,27 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: '#FFC837', // Borda amarela de destaque
+    borderColor: '#FFC837',
   },
   
-  // --- Barra de Pesquisa ---
-  searchContainer: {
+  // --- Barra de Pesquisa CORRIGIDA (Botão Visual) ---
+  searchButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F3F3F3',
     borderRadius: 30,
-    height: 45, // Um pouco maior para melhor toque
+    height: 48, 
     paddingHorizontal: 15,
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-    paddingVertical: 0,
-    paddingHorizontal: 0,
+  searchIcon: {
+    marginRight: 8,
   },
-  searchIconContainer: {
-    marginLeft: 10,
-    padding: 5,
+  searchPlaceholder: {
+    fontSize: 16,
+    color: '#888',
   },
 
   // --- Título e Placeholder de Conteúdo ---
@@ -238,7 +209,7 @@ const styles = StyleSheet.create({
   petListPlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFBEA', // Fundo amarelo claro
+    backgroundColor: '#FFFBEA',
     borderRadius: 15,
     padding: 30,
     borderWidth: 2,
@@ -260,7 +231,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'flex-start',
-    backgroundColor: '#FFC837', // Cor de destaque do design
+    backgroundColor: '#FFC837', 
     height: 85, 
     paddingHorizontal: 5,
     paddingTop: 8,
@@ -271,7 +242,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 10,
     elevation: 10,
-    position: 'absolute', // Fixa no fundo
+    position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
@@ -288,12 +259,12 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 2,
   },
+  
+  // ... (Outros estilos da Tab Bar)
   tabLabelFocused: {
     color: '#333',
     fontWeight: '700',
   },
-  
-  // --- Botão Central de Adicionar ---
   addButton: {
     backgroundColor: '#fff', 
     width: 65,
@@ -301,7 +272,7 @@ const styles = StyleSheet.create({
     borderRadius: 35,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: -30, // Puxa o botão para cima, sobrepondo a borda
+    marginTop: -30,
     borderWidth: 5,
     borderColor: '#FFC837', 
     shadowColor: '#333',
