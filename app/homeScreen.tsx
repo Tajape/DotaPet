@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   StyleSheet,
   View,
@@ -7,14 +7,13 @@ import {
   SafeAreaView,
   StatusBar,
   ScrollView,
-  TextInput,
   Image,
   Platform,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router'; 
 import Ionicons from 'react-native-vector-icons/Ionicons'; 
 
-// Definição de tipos para as props do componente
+// Definição de tipos para as props do componente TabItem
 interface TabItemProps {
   name: string;
   label: string;
@@ -22,7 +21,7 @@ interface TabItemProps {
   isFocused: boolean;
 }
 
-// Dados de perfil simulados
+// Dados de perfil simulados para o cabeçalho
 const MOCK_USER_PROFILE = {
   imageUri: 'https://placehold.co/100x100/A0A0A0/FFFFFF?text=EU', 
   username: 'SeuUsuário',
@@ -33,23 +32,25 @@ const MOCK_USER_PROFILE = {
 // =========================================================================
 
 const HomeScreen = () => {
-  // Mantemos o state, mas ele será pouco usado na Home após a correção
-  const [searchQuery, setSearchQuery] = useState(''); 
   const router = useRouter();
   const currentRoute = '/homeScreen'; 
 
+  // --- Funções de Navegação ---
   const handleTabPress = (route: string) => {
-    // A navegação da TabBar e da barra de pesquisa rápida
-    if (route === '/searchScreen') {
-      router.push('/searchScreen' as never); 
-    } else if (route === '/register-pet') {
+    // 💡 AQUI ESTÁ A LIGAÇÃO PARA O CADASTRO DE PET
+    if (route === '/register-pet') {
       router.push('/register-pet' as never); 
+    } else if (route === '/searchScreen') {
+      router.push('/searchScreen' as never); 
     } else if (route === '/user-profile') {
       router.push('/user-profile' as never);
+    } else {
+        // Implementar a navegação para Início e Favoritos
+        // router.replace(route as never); 
     }
-    // Adicione outras rotas conforme necessário
   };
-  
+
+  // --- Componente TabItem (para a barra inferior) ---
   const TabItem: React.FC<TabItemProps> = ({ name, label, route, isFocused }) => (
     <TouchableOpacity
       key={route}
@@ -82,10 +83,10 @@ const HomeScreen = () => {
           />
         </TouchableOpacity>
 
-        {/* Barra de Pesquisa (AGORA UM BOTÃO DE NAVEGAÇÃO LIMPO) */}
+        {/* Barra de Pesquisa (BOTÃO VISUAL PARA NAVEGAR) */}
         <TouchableOpacity 
           style={styles.searchButton} 
-          onPress={() => handleTabPress('/searchScreen')} // Navega ao tocar
+          onPress={() => handleTabPress('/searchScreen')} 
           activeOpacity={0.8}
         >
           <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
@@ -96,7 +97,7 @@ const HomeScreen = () => {
         
       </View>
 
-      {/* ------------------ 3. CONTEÚDO PRINCIPAL (SCROLLABLE) ------------------ */}
+      {/* ------------------ 3. CONTEÚDO PRINCIPAL (SCROLLABLE - PLACEHOLDER) ------------------ */}
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -105,28 +106,34 @@ const HomeScreen = () => {
           
           <Text style={styles.sectionTitle}>Pets Prontos para Adoção</Text>
           
-          <View style={styles.petListPlaceholder}>
-            <Ionicons name="paw" size={40} color="#FFC837" />
+          {/* PLACEHOLDER GENÉRICO (Conforme sua imagem original) */}
+          <View style={styles.placeholderCardContainer}>
+            <Ionicons name="paw" size={40} color="#FFC837" style={{ marginBottom: 10 }} />
             <Text style={styles.placeholderText}>
               Este é o contêiner para os seus cards de animais!
             </Text>
+            <Text style={styles.placeholderTextSmall}>
+              Implemente o componente de card aqui (por exemplo, dentro de um FlatList).
+            </Text>
           </View>
-          
-          <View style={{ height: 600 }} />
+
+          <View style={{ height: 50 }} />
           
         </View>
       </ScrollView>
 
       {/* ------------------ 4. BARRA DE NAVEGAÇÃO INFERIOR (FIXA) ------------------ */}
       <View style={styles.tabBarContainer}>
+        {/* Início (Focado) */}
         <TabItem name="home-outline" label="Início" route="/homeScreen" isFocused={currentRoute === '/homeScreen'} />
         
         {/* Pesquisar: Rota para SearchScreen */}
         <TabItem name="search-outline" label="Pesquisar" route="/searchScreen" isFocused={false} />
         
+        {/* Botão Central de Adicionar (LIGAÇÃO PARA /register-pet) */}
         <TouchableOpacity 
           style={styles.addButton} 
-          onPress={() => handleTabPress('/register-pet')}
+          onPress={() => handleTabPress('/register-pet')} // <-- LIGAÇÃO CORRETA
         >
           <Ionicons name="add" size={32} color="#333" />
         </TouchableOpacity>
@@ -140,7 +147,7 @@ const HomeScreen = () => {
 };
 
 // =========================================================================
-// 5. ESTILIZAÇÃO (CORRIGIDA E OTIMIZADA)
+// 5. ESTILIZAÇÃO
 // =========================================================================
 
 const styles = StyleSheet.create({
@@ -178,7 +185,7 @@ const styles = StyleSheet.create({
     borderColor: '#FFC837',
   },
   
-  // --- Barra de Pesquisa CORRIGIDA (Botão Visual) ---
+  // --- Barra de Pesquisa (Botão Visual) ---
   searchButton: {
     flex: 1,
     flexDirection: 'row',
@@ -198,7 +205,7 @@ const styles = StyleSheet.create({
     color: '#888',
   },
 
-  // --- Título e Placeholder de Conteúdo ---
+  // --- Título de Seção ---
   sectionTitle: {
     fontSize: 24,
     fontWeight: '700',
@@ -206,26 +213,32 @@ const styles = StyleSheet.create({
     marginTop: 25,
     marginBottom: 15,
   },
-  petListPlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFBEA',
-    borderRadius: 15,
-    padding: 30,
+
+  // --- Placeholder Card (Revertido) ---
+  placeholderCardContainer: {
+    backgroundColor: '#FFFBEA', 
     borderWidth: 2,
     borderColor: '#FFC837',
     borderStyle: 'dashed',
-    minHeight: 180,
-    marginTop: 10,
+    borderRadius: 15,
+    padding: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 250,
+    textAlign: 'center',
   },
   placeholderText: {
     fontSize: 16,
-    color: '#555',
-    marginTop: 10,
+    color: '#333',
     textAlign: 'center',
-    lineHeight: 24,
+    marginBottom: 5,
   },
-
+  placeholderTextSmall: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+  },
+  
   // --- Bottom Tab Bar ---
   tabBarContainer: {
     flexDirection: 'row',
@@ -259,12 +272,12 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 2,
   },
-  
-  // ... (Outros estilos da Tab Bar)
   tabLabelFocused: {
     color: '#333',
     fontWeight: '700',
   },
+  
+  // --- Botão Central de Adicionar ---
   addButton: {
     backgroundColor: '#fff', 
     width: 65,
