@@ -33,20 +33,34 @@ const MOCK_USER_PROFILE = {
 
 const HomeScreen = () => {
   const router = useRouter();
-  const currentRoute = '/homeScreen'; 
+  // Usa router.pathname para saber qual tela estamos *realmente*
+  // e '/homeScreen' como fallback.
+  const currentRoute = router.pathname || '/homeScreen'; 
 
-  // --- Funções de Navegação ---
+  // --- Funções de Navegação CORRIGIDA FINAL ---
   const handleTabPress = (route: string) => {
-    // 💡 AQUI ESTÁ A LIGAÇÃO PARA O CADASTRO DE PET
+    
+    // ✅ CORREÇÃO PRINCIPAL: Ignora o clique se a rota for a atual
+    if (route === currentRoute) {
+      console.log(`Já está em ${route}. Navegação ignorada.`);
+      return; 
+    }
+
     if (route === '/register-pet') {
+      // Usa push para adicionar a tela de cadastro sobre a atual
       router.push('/register-pet' as never); 
     } else if (route === '/searchScreen') {
-      router.push('/searchScreen' as never); 
-    } else if (route === '/user-profile') {
-      router.push('/user-profile' as never);
-    } else {
-        // Implementar a navegação para Início e Favoritos
-        // router.replace(route as never); 
+      // Usa replace para navegação de tabs (melhor para a barra inferior)
+      router.replace('/searchScreen' as never); 
+    } else if (route === '/my-profile') {
+      // Usa replace para navegação de tabs
+      router.replace('/my-profile' as never);
+    } else if (route === '/favorites') { 
+      // ✅ AQUI ESTÁ A LIGAÇÃO PARA FAVORITOS (usando replace)
+      router.replace('/favorites' as never); 
+    } else if (route === '/homeScreen') {
+       // Usa replace para navegação de tabs
+       router.replace('/homeScreen' as never);
     }
   };
 
@@ -56,6 +70,8 @@ const HomeScreen = () => {
       key={route}
       style={styles.tabItem}
       onPress={() => handleTabPress(route)}
+      // Desativa o toque se já estiver na tab atual
+      disabled={isFocused && route === currentRoute} 
     >
       <Ionicons 
         name={isFocused ? name.replace('-outline', '') as "home" : name as "home-outline"} 
@@ -70,13 +86,13 @@ const HomeScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen options={{ headerShown: false, animation: 'none' as const }} />
       <StatusBar barStyle="dark-content" backgroundColor="#fff" /> 
 
       {/* ------------------ 2. CABEÇALHO (FIXO) ------------------ */}
       <View style={styles.header}>
         {/* Ícone/Foto do Usuário */}
-        <TouchableOpacity onPress={() => handleTabPress('/user-profile')} style={styles.profileButton}>
+        <TouchableOpacity onPress={() => handleTabPress('/my-profile')} style={styles.profileButton} activeOpacity={0.7}>
           <Image
             source={{ uri: MOCK_USER_PROFILE.imageUri }}
             style={styles.profileImage}
@@ -125,21 +141,44 @@ const HomeScreen = () => {
       {/* ------------------ 4. BARRA DE NAVEGAÇÃO INFERIOR (FIXA) ------------------ */}
       <View style={styles.tabBarContainer}>
         {/* Início (Focado) */}
-        <TabItem name="home-outline" label="Início" route="/homeScreen" isFocused={currentRoute === '/homeScreen'} />
+        <TabItem 
+          name="home-outline" 
+          label="Início" 
+          route="/homeScreen" 
+          isFocused={currentRoute === '/homeScreen'} 
+        />
         
         {/* Pesquisar: Rota para SearchScreen */}
-        <TabItem name="search-outline" label="Pesquisar" route="/searchScreen" isFocused={false} />
+        <TabItem 
+          name="search-outline" 
+          label="Pesquisar" 
+          route="/searchScreen" 
+          isFocused={currentRoute === '/searchScreen'} // Ajuste de isFocused
+        />
         
         {/* Botão Central de Adicionar (LIGAÇÃO PARA /register-pet) */}
         <TouchableOpacity 
           style={styles.addButton} 
-          onPress={() => handleTabPress('/register-pet')} // <-- LIGAÇÃO CORRETA
+          onPress={() => handleTabPress('/register-pet')} 
         >
           <Ionicons name="add" size={32} color="#333" />
         </TouchableOpacity>
 
-        <TabItem name="heart-outline" label="Favoritos" route="/favorites" isFocused={false} />
-        <TabItem name="person-outline" label="Perfil" route="/user-profile" isFocused={false} />
+        {/* ✅ FAVORITOS (Usando currentRoute para isFocused) */}
+        <TabItem 
+          name="heart-outline" 
+          label="Favoritos" 
+          route="/favorites" 
+          isFocused={currentRoute === '/favorites'} 
+        />
+        
+        {/* Perfil (Usando currentRoute para isFocused) */}
+        <TabItem 
+          name="person-outline" 
+          label="Perfil" 
+          route="/my-profile" 
+          isFocused={currentRoute === '/my-profile'} 
+        />
       </View>
       
     </SafeAreaView>
