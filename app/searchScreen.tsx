@@ -1,37 +1,37 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Stack, useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  SafeAreaView,
-  TextInput,
+  Alert,
+  BackHandler,
   FlatList,
   Platform,
-  Alert,
+  SafeAreaView,
   StatusBar,
-} from 'react-native';
-import { useRouter, Stack } from 'expo-router';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Ionicons from "react-native-vector-icons/Ionicons";
 
-// Chave para armazenar a lista de pesquisas
-const SEARCH_HISTORY_KEY = '@SearchHistory';
-const MAX_HISTORY_ITEMS = 5; 
+// Constantes
+const SEARCH_HISTORY_KEY = "@SearchHistory";
+const MAX_HISTORY_ITEMS = 5;
 
 // =========================================================================
-// 1. LÓGICA E GERENCIAMENTO
+// 1. COMPONENTE PRINCIPAL (SearchScreen)
 // =========================================================================
 
 const SearchScreen = () => {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [history, setHistory] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // --- Funções de AsyncStorage (Mantidas) ---
+  // --- Funções de AsyncStorage ---
   const loadHistory = useCallback(async () => {
-    // ... (Mantida a lógica de carregar histórico)
     try {
       const storedHistory = await AsyncStorage.getItem(SEARCH_HISTORY_KEY);
       if (storedHistory) {
@@ -45,9 +45,11 @@ const SearchScreen = () => {
   }, []);
 
   const saveHistory = async (updatedHistory: string[]) => {
-    // ... (Mantida a lógica de salvar histórico)
     try {
-      await AsyncStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(updatedHistory));
+      await AsyncStorage.setItem(
+        SEARCH_HISTORY_KEY,
+        JSON.stringify(updatedHistory)
+      );
       setHistory(updatedHistory);
     } catch (e) {
       console.error("Erro ao salvar histórico: ", e);
@@ -55,32 +57,29 @@ const SearchScreen = () => {
   };
 
   const addSearchToHistory = (query: string) => {
-    // ... (Mantida a lógica de adicionar ao histórico)
     if (!query.trim()) return;
     const cleanQuery = query.trim();
-    let updatedHistory = history.filter(item => item !== cleanQuery);
+    let updatedHistory = history.filter((item) => item !== cleanQuery);
     updatedHistory.unshift(cleanQuery);
     updatedHistory = updatedHistory.slice(0, MAX_HISTORY_ITEMS);
     saveHistory(updatedHistory);
   };
-  
+
   const removeSearchFromHistory = (itemToRemove: string) => {
-    // ... (Mantida a lógica de remover do histórico)
-    const updatedHistory = history.filter(item => item !== itemToRemove);
+    const updatedHistory = history.filter((item) => item !== itemToRemove);
     saveHistory(updatedHistory);
   };
 
   const clearAllHistory = () => {
-    // ... (Mantida a lógica de limpar todo o histórico)
     Alert.alert(
       "Limpar Histórico",
       "Tem certeza que deseja apagar todo o seu histórico de pesquisa?",
       [
         { text: "Cancelar", style: "cancel" },
-        { 
-          text: "Limpar", 
-          style: "destructive", 
-          onPress: () => saveHistory([])
+        {
+          text: "Limpar",
+          style: "destructive",
+          onPress: () => saveHistory([]),
         },
       ]
     );
@@ -93,47 +92,69 @@ const SearchScreen = () => {
   // --- Funções de Ação ---
 
   const handleSearchSubmit = () => {
-    // É chamado quando o usuário aperta ENTER ou o botão de filtro
     if (searchQuery.trim()) {
-      addSearchToHistory(searchQuery); 
-      
-      // >>> NAVEGAÇÃO PARA RESULTADOS APÓS PESQUISA MANUAL <<<
-      router.push({ 
-        pathname: '/results', 
-        params: { q: searchQuery } 
+      addSearchToHistory(searchQuery);
+      router.push({
+        pathname: "/results",
+        params: { q: searchQuery },
       } as never);
     }
   };
-  
-  // >>> FUNÇÃO CORRIGIDA: NAVEGAÇÃO AO CLICAR NO HISTÓRICO <<<
+
   const handleHistoryItemPress = (item: string) => {
-    // 1. Garante que o item clicado vá para o topo do histórico
-    addSearchToHistory(item); 
-    
-    // 2. Navega usando o item clicado como parâmetro de busca
-    router.push({ 
-        pathname: '/results', 
-        params: { q: item } 
+    addSearchToHistory(item);
+    router.push({
+      pathname: "/results",
+      params: { q: item },
     } as never);
-    
-    // 3. Opcional: Limpa o campo de input após navegar
-    setSearchQuery(''); 
+    setSearchQuery("");
   };
 
+  // FUNÇÃO DE NAVEGAÇÃO CORRIGIDA
+  const handleGoToHome = () => {
+    // ⭐ CORREÇÃO PRINCIPAL: Usa router.replace('/homeScreen')
+    // Isso garante que você volte para a rota raiz (Home) da sua Tab Bar
+    // e remove a tela de pesquisa da pilha.
+    // Se o seu arquivo home for 'index.tsx', mude para router.replace('/');
+    router.replace("/homeScreen");
+  };
 
-// =========================================================================
-// 2. RENDERIZAÇÃO
-// =========================================================================
+  // ⭐ NOVA FUNÇÃO: Handle do botão de voltar do sistema
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        handleGoToHome();
+        return true; // Previne o comportamento padrão
+      };
+
+      const subscription = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress
+      );
+
+      return () => subscription.remove();
+    }, [])
+  );
+
+  // =========================================================================
+  // 2. RENDERIZAÇÃO
+  // =========================================================================
 
   const renderHistoryItem = ({ item }: { item: string }) => (
-    <TouchableOpacity 
-      style={styles.historyItem} 
-      onPress={() => handleHistoryItemPress(item)} // CHAMA A NOVA FUNÇÃO AQUI
+    <TouchableOpacity
+      style={styles.historyItem}
+      onPress={() => handleHistoryItemPress(item)}
     >
-      {/* Ícone de "re-executar" a pesquisa */}
-      <Ionicons name="arrow-back-outline" size={20} color="#888" style={styles.historyIcon} />
-      <Text style={styles.historyText} numberOfLines={1}>{item}</Text>
-      <TouchableOpacity 
+      <Ionicons
+        name="arrow-back-outline"
+        size={20}
+        color="#888"
+        style={styles.historyIcon}
+      />
+      <Text style={styles.historyText} numberOfLines={1}>
+        {item}
+      </Text>
+      <TouchableOpacity
         onPress={() => removeSearchFromHistory(item)}
         style={styles.removeButton}
       >
@@ -144,39 +165,34 @@ const SearchScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      
-      {/* Esconde o header padrão */}
-      <Stack.Screen 
-        options={{ 
-          headerShown: false, 
-          presentation: 'modal', 
-        }} 
+      <Stack.Screen
+        options={{
+          headerShown: false,
+          // ⭐ REMOVIDO: presentation: 'modal'
+          gestureEnabled: true,
+        }}
       />
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      
+
       {/* ------------------ CABEÇALHO DE PESQUISA ------------------ */}
       <View style={styles.header}>
-        {/* Botão Voltar */}
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        {/* ⭐ Ação de Voltar para a Home ⭐ */}
+        <TouchableOpacity onPress={handleGoToHome} style={styles.backButton}>
           <Ionicons name="arrow-back" size={28} color="#333" />
         </TouchableOpacity>
-        
+
         {/* Barra de Input */}
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
             placeholder="Pesquisar..."
-            placeholderTextColor="#333" 
+            placeholderTextColor="#333"
             value={searchQuery}
             onChangeText={setSearchQuery}
-            onSubmitEditing={handleSearchSubmit} // Dispara a busca
+            onSubmitEditing={handleSearchSubmit}
             returnKeyType="search"
-            autoFocus={true} 
+            autoFocus={true}
           />
-          {/* Ícone de Filtro */}
-          <TouchableOpacity onPress={handleSearchSubmit} style={styles.filterButton}>
-            <Ionicons name="options-outline" size={24} color="#333" />
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -199,11 +215,10 @@ const SearchScreen = () => {
             renderItem={renderHistoryItem}
             keyExtractor={(item) => item}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 20 }} 
+            contentContainerStyle={{ paddingBottom: 20 }}
           />
         </View>
       )}
-
     </SafeAreaView>
   );
 };
@@ -213,15 +228,16 @@ const SearchScreen = () => {
 // =========================================================================
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#fff' },
+  safeArea: { flex: 1, backgroundColor: "#fff" },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 15,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 5 : 0, 
+    paddingTop:
+      Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 5 : 0,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: "#eee",
   },
   backButton: {
     paddingRight: 10,
@@ -229,24 +245,20 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F3F3F3', 
-    borderRadius: 8, 
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F3F3F3",
+    borderRadius: 8,
     height: 48,
-    paddingHorizontal: 10,
+    paddingHorizontal: 0,
   },
   searchInput: {
     flex: 1,
     fontSize: 17,
-    color: '#333',
+    color: "#333",
     paddingVertical: 0,
-    paddingHorizontal: 0, 
-    height: '100%',
-  },
-  filterButton: {
-    marginLeft: 10,
-    padding: 2,
+    paddingHorizontal: 15,
+    height: "100%",
   },
   historyListContainer: {
     flex: 1,
@@ -254,27 +266,27 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   historyHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 10,
     marginTop: 10,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: "700",
+    color: "#333",
   },
   clearButtonText: {
     fontSize: 14,
-    color: '#999',
+    color: "#999",
   },
   historyItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f5f5f5',
+    borderBottomColor: "#f5f5f5",
   },
   historyIcon: {
     marginRight: 10,
@@ -282,16 +294,16 @@ const styles = StyleSheet.create({
   historyText: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: "#333",
   },
   removeButton: {
     paddingLeft: 10,
   },
   loadingText: {
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 50,
-    color: '#999',
-  }
+    color: "#999",
+  },
 });
 
 export default SearchScreen;

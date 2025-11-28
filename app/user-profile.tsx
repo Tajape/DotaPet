@@ -1,32 +1,34 @@
-import React, { useState } from 'react';
+import { Stack, useRouter } from "expo-router";
+import React, { useState } from "react";
 import {
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
   StyleSheet,
-  View,
   Text,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
-  Alert,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Image, // Importado o componente Image
-} from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+  View,
+} from "react-native";
 // Trocando a importação direta do Ionicons para garantir a compatibilidade de ambiente
-import Ionicons from 'react-native-vector-icons/Ionicons'; 
-import * as ImagePicker from 'expo-image-picker'; 
+import * as ImagePicker from "expo-image-picker";
+import Ionicons from "react-native-vector-icons/Ionicons";
 
 // =========================================================================
 // 1. COMPONENTE PRINCIPAL (UserProfileScreen)
 // =========================================================================
 
 const UserProfileScreen = () => {
-  const [username, setUsername] = useState<string>(''); 
-  const [email, setEmail] = useState<string>(''); 
-  const [phone, setPhone] = useState<string>('');
-  const [location, setLocation] = useState<string>('');
+  const [username, setUsername] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [phone, setPhone] = useState<string>("");
+  const [stateRegion, setStateRegion] = useState<string>(""); // "estado"
+  const [city, setCity] = useState<string>("");
+  const [neighborhood, setNeighborhood] = useState<string>("");
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
   const router = useRouter();
@@ -34,9 +36,13 @@ const UserProfileScreen = () => {
   // --- Função para Upload/Seleção de Foto ---
   const handleImagePicker = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permissão necessária', 'Precisamos de permissão para acessar sua galeria para selecionar uma imagem.');
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permissão necessária",
+          "Precisamos de permissão para acessar sua galeria para selecionar uma imagem."
+        );
         return;
       }
 
@@ -57,17 +63,38 @@ const UserProfileScreen = () => {
 
   // --- Função para Adicionar/Atualizar Perfil (Ação do Botão) ---
   const handleAddProfile = () => {
-    if (!username || !email || !phone || !location) {
-      Alert.alert('Atenção', 'Por favor, preencha todos os campos obrigatórios.');
+    if (
+      !username ||
+      !email ||
+      !phone ||
+      !city ||
+      !stateRegion ||
+      !neighborhood
+    ) {
+      Alert.alert(
+        "Atenção",
+        "Por favor, preencha todos os campos obrigatórios."
+      );
       return;
     }
 
-    console.log('Perfil do usuário configurado:', { username, email, phone, location, profileImage });
-    
-    Alert.alert('Sucesso!', 'Seu perfil foi configurado com sucesso. Vamos adotar!');
-    
+    console.log("Perfil do usuário configurado:", {
+      username,
+      email,
+      phone,
+      city,
+      state: stateRegion,
+      neighborhood,
+      profileImage,
+    });
+
+    Alert.alert(
+      "Sucesso!",
+      "Seu perfil foi configurado com sucesso. Vamos adotar!"
+    );
+
     // CORREÇÃO: Redireciona para o arquivo homeScreen.tsx
-    router.replace('/homeScreen' as never); 
+    router.replace("/homeScreen" as never);
   };
 
   const handleGoBack = () => {
@@ -75,7 +102,7 @@ const UserProfileScreen = () => {
       router.back();
     } else {
       // CORREÇÃO: Redireciona para o arquivo homeScreen.tsx (ou a rota inicial '/')
-      router.replace('/homeScreen' as never); 
+      router.replace("/homeScreen" as never);
     }
   };
 
@@ -83,8 +110,8 @@ const UserProfileScreen = () => {
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
         <Stack.Screen options={{ headerShown: false }} />
         <StatusBar barStyle="dark-content" backgroundColor="#FFC837" />
@@ -100,23 +127,35 @@ const UserProfileScreen = () => {
           <View style={styles.backButtonPlaceholder} />
         </View>
 
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled" 
+          keyboardShouldPersistTaps="handled"
         >
           <View style={styles.contentContainer}>
-            
             {/* Seção de Upload de Imagem */}
-            <Text style={styles.imageLabel}>Insira uma imagem sua para seu perfil:</Text>
+            <Text style={styles.imageLabel}>
+              Insira uma imagem sua para seu perfil:
+            </Text>
             <View style={styles.profileImageContainer}>
-              <TouchableOpacity onPress={handleImagePicker} style={styles.profileImageWrapper}>
+              <TouchableOpacity
+                onPress={handleImagePicker}
+                style={styles.profileImageWrapper}
+              >
                 {profileImage ? (
-                  <Image source={{ uri: profileImage }} style={styles.profileImage} />
+                  <Image
+                    source={{ uri: profileImage }}
+                    style={styles.profileImage}
+                  />
                 ) : (
-                  <View>
-                    <Ionicons name="person-circle-outline" size={100} color="#888" style={styles.userIcon} />
+                  <View style={styles.profilePlaceholder}>
+                    <Ionicons
+                      name="person-circle-outline"
+                      size={110}
+                      color="#ffffffff" // ícone interno cinza
+                      style={styles.userIcon}
+                    />
                     <View style={styles.addIconCircle}>
-                      <Ionicons name="add" size={24} color="#333" />
+                      <Ionicons name="add" size={20} color="#333" />
                     </View>
                   </View>
                 )}
@@ -160,27 +199,48 @@ const UserProfileScreen = () => {
               returnKeyType="next"
             />
 
-            {/* Input: Localização */}
-            <Text style={styles.label}>Localização</Text>
+            {/* Inputs: Estado / Cidade / Bairro */}
+            <Text style={styles.label}>Estado</Text>
             <TextInput
               style={styles.input}
-              placeholder="insira aqui sua localização"
+              placeholder="insira aqui seu estado"
               placeholderTextColor="#999"
-              value={location}
-              onChangeText={setLocation}
+              value={stateRegion}
+              onChangeText={setStateRegion}
+              autoCapitalize="words"
+              returnKeyType="next"
+            />
+
+            <Text style={styles.label}>Cidade</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="insira aqui sua cidade"
+              placeholderTextColor="#999"
+              value={city}
+              onChangeText={setCity}
+              autoCapitalize="words"
+              returnKeyType="next"
+            />
+
+            <Text style={styles.label}>Bairro</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="insira aqui seu bairro"
+              placeholderTextColor="#999"
+              value={neighborhood}
+              onChangeText={setNeighborhood}
               autoCapitalize="words"
               returnKeyType="done"
             />
 
             {/* Botão Adicionar */}
-            <TouchableOpacity 
-              style={styles.addButton} 
+            <TouchableOpacity
+              style={styles.addButton}
               onPress={handleAddProfile}
               activeOpacity={0.8}
             >
               <Text style={styles.addButtonText}>Adicionar</Text>
             </TouchableOpacity>
-
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -196,7 +256,7 @@ const styles = StyleSheet.create({
   // --- Estrutura Básica ---
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   scrollContent: {
     flexGrow: 1,
@@ -204,18 +264,23 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 30,
-    paddingTop: 10, 
+    paddingTop: 10,
   },
-  
+
   // --- Cabeçalho ---
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
     paddingHorizontal: 15,
-    paddingVertical: 10,
-    backgroundColor: '#FFC837',
-    height: 60,
+    // Move o header para baixo considerando a StatusBar (Android/iOS)
+    paddingTop:
+      Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 12 : 20,
+    paddingBottom: 10,
+    backgroundColor: "#FFC837",
+    // Ajusta a altura total para não cortar conteúdo
+    height:
+      Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 72 : 80,
   },
   backButton: {
     paddingRight: 15,
@@ -226,92 +291,104 @@ const styles = StyleSheet.create({
   },
   headerTitleContainer: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   headerTitle: {
-    fontSize: 20, 
-    fontWeight: '700',
-    color: '#333',
-    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#333",
+    textAlign: "center",
   },
 
   // --- Seção de Imagem de Perfil ---
   imageLabel: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
+    fontWeight: "500",
+    color: "#333",
     marginTop: 20,
     marginBottom: 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
   profileImageContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 40,
   },
   profileImageWrapper: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: '#EEE',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-    borderWidth: 3,
-    borderColor: '#FFC837',
-    overflow: 'hidden',
+    alignSelf: "center",
+    marginTop: 10,
+    // garante que o ícone de "add" possa ficar para fora
+    overflow: "visible",
+  },
+  profilePlaceholder: {
+    width: 120, // reduzido (antes 140)
+    height: 120, // reduzido (antes 140)
+    borderRadius: 60, // ajustado para novo tamanho
+    backgroundColor: "#7a7977ff",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
   },
   profileImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 70,
+    width: 120, // reduzido (antes 140)
+    height: 120, // reduzido (antes 140)
+    borderRadius: 60,
+    borderWidth: 3,
+    borderColor: "#FFC837",
   },
   userIcon: {
-    marginTop: 0,
-    fontSize: 100,
+    // mantém ícone grande centralizado dentro da bolinha
+    textAlign: "center",
   },
   addIconCircle: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: '#FFC837',
+    position: "absolute",
+    // posiciona fora da bolinha (ajuste valores se quiser mais/menos fora)
+    right: -8, // ligeiro ajuste para novo tamanho
+    bottom: -8, // ligeiro ajuste para novo tamanho
+    width: 36, // reduzido (antes 40)
+    height: 36, // reduzido (antes 40)
     borderRadius: 18,
-    width: 36,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#FFC837", // cor amarela do + (ficará fora da bolinha)
+    alignItems: "center",
+    justifyContent: "center",
+    // borda branca para destacar sobre a tela/imagem
     borderWidth: 3,
-    borderColor: '#fff',
+    borderColor: "#fff",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
 
   // --- Inputs e Labels ---
   label: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
     marginTop: 15,
     marginBottom: 8,
   },
   input: {
     height: 50,
-    borderColor: '#CCC',
+    borderColor: "#CCC",
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 15,
     fontSize: 16,
-    backgroundColor: '#F9F9F9',
+    backgroundColor: "#F9F9F9",
   },
-  
+
   // --- Botão Principal ---
   addButton: {
-    width: '100%',
+    width: "100%",
     paddingVertical: 18,
     borderRadius: 10,
-    backgroundColor: '#FFC837',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#FFC837",
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 50,
     marginBottom: 20,
-    shadowColor: '#333',
+    shadowColor: "#333",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 5,
@@ -319,8 +396,8 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: "700",
+    color: "#333",
   },
 });
 
