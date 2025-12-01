@@ -13,7 +13,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { queryDocuments } from '../firebase';
+import { getDocument, queryDocuments } from '../firebase';
 import { getCurrentUser } from '../services/authService';
 
 // Definição de tipos para as props do componente TabItem
@@ -24,11 +24,22 @@ interface TabItemProps {
   isFocused: boolean;
 }
 
-// Dados de perfil simulados para o cabeçalho
+// Dados de perfil simulados para fallback
 const MOCK_USER_PROFILE = {
-  imageUri: 'https://placehold.co/100x100/A0A0A0/FFFFFF?text=EU', 
+  imageUri: 'https://placehold.co/100x100/A0A0A0/FFFFFF?text=EU',
   username: 'SeuUsuário',
 };
+
+// Tipagem simples para perfil
+interface UserProfile {
+  username?: string;
+  email?: string;
+  phone?: string;
+  city?: string;
+  state?: string;
+  neighborhood?: string;
+  profileImage?: string | null;
+}
 
 // =========================================================================
 // 1. COMPONENTE PRINCIPAL (HomeScreen)
@@ -38,11 +49,11 @@ const HomeScreen = () => {
   const router = useRouter();
   const [pets, setPets] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const currentRoute: string = '/(tabs)';
-
-  // Carregar pets do usuário ao montar
+  // Carregar perfil e pets do usuário ao montar
   useEffect(() => {
-    const loadUserPets = async () => {
+    const loadData = async () => {
       setIsLoading(true);
       try {
         const user = getCurrentUser();
@@ -51,19 +62,24 @@ const HomeScreen = () => {
           return;
         }
 
+        // carregar perfil salvo no Firestore
+        const profile = await getDocument('users', user.uid);
+        if (profile) setUserProfile(profile as UserProfile);
+
+        // carregar pets do usuário
         const userPets = await queryDocuments('pets', [
           where('ownerId', '==', user.uid)
         ]);
         setPets(userPets);
       } catch (error) {
-        console.error('Erro ao carregar pets:', error);
+        console.error('Erro ao carregar dados:', error);
       } finally {
         setIsLoading(false);
       }
     };
-    
-    loadUserPets();
-  }, []); 
+
+    loadData();
+  }, []);
 
   // --- Funções de Navegação CORRIGIDA FINAL ---
   const handleTabPress = (route: string) => {
@@ -119,13 +135,13 @@ const HomeScreen = () => {
 
       {/* ------------------ 2. CABEÇALHO (FIXO) ------------------ */}
       <View style={styles.header}>
-        {/* Ícone/Foto do Usuário */}
-        <TouchableOpacity onPress={() => handleTabPress('/my-profile')} style={styles.profileButton} activeOpacity={0.7}>
-          <Image
-            source={{ uri: MOCK_USER_PROFILE.imageUri }}
-            style={styles.profileImage}
-          />
-        </TouchableOpacity>
+          {/* Ícone/Foto do Usuário */}
+          <TouchableOpacity onPress={() => handleTabPress('/my-profile')} style={styles.profileButton} activeOpacity={0.7}>
+            <Image
+              source={{ uri: userProfile?.profileImage || MOCK_USER_PROFILE.imageUri }}
+              style={styles.profileImage}
+            />
+          </TouchableOpacity>
 
         {/* Barra de Pesquisa (BOTÃO VISUAL PARA NAVEGAR) */}
         <TouchableOpacity 
@@ -148,18 +164,51 @@ const HomeScreen = () => {
       >
         <View style={styles.mainContent}>
           
-          <Text style={styles.sectionTitle}>Pets Prontos para Adoção</Text>
-          
-          {/* PLACEHOLDER GENÉRICO (Conforme sua imagem original) */}
-          <View style={styles.placeholderCardContainer}>
-            <Ionicons name="paw" size={40} color="#FFC837" style={{ marginBottom: 10 }} />
-            <Text style={styles.placeholderText}>
-              Este é o contêiner para os seus cards de animais!
-            </Text>
-            <Text style={styles.placeholderTextSmall}>
-              Implemente o componente de card aqui (por exemplo, dentro de um FlatList).
-            </Text>
-          </View>
+          <Text style={styles.sectionTitle}>Seus Pets Registrados</Text>
+
+          {isLoading ? (
+            <View style={styles.placeholderCardContainer}>
+              <Ionicons name="timer" size={36} color="#FFC837" style={{ marginBottom: 10 }} />
+              <Text style={styles.placeholderText}>Carregando...</Text>
+            </View>
+          ) : pets && pets.length > 0 ? (
+            <View>
+              {pets.map((pet, idx) => {
+                const firstImage = Array.isArray(pet.images) && pet.images.length > 0 ? pet.images[0] : (pet.image || MOCK_USER_PROFILE.imageUri);
+                const ageLabel = pet.age ? `idade ${pet.age}` : '';
+                const description = pet.description || pet.details || '';
+                const ownerAvatar = userProfile?.profileImage || MOCK_USER_PROFILE.imageUri;
+                return (
+                  <TouchableOpacity key={pet.id || idx} style={styles.cardWrapper} onPress={() => router.push(`/pets/${pet.id}` as never)}>
+                    <View style={styles.card}>
+                      <Image source={{ uri: firstImage }} style={styles.cardImage} />
+
+                      <View style={styles.cardContent}>
+                        <Image source={{ uri: ownerAvatar }} style={styles.cardAvatar} />
+                        <View style={styles.cardText}>
+                          <Text style={styles.cardName}>{pet.name || 'Sem nome'}</Text>
+                          <Text numberOfLines={2} style={styles.cardDescription}>{description}</Text>
+                        </View>
+                        <View style={styles.cardAgeBadge}>
+                          <Text style={styles.cardAgeText}>{ageLabel}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ) : (
+            <View style={styles.placeholderCardContainer}>
+              <Ionicons name="paw" size={40} color="#FFC837" style={{ marginBottom: 10 }} />
+              <Text style={styles.placeholderText}>
+                Você ainda não registrou nenhum pet!
+              </Text>
+              <Text style={styles.placeholderTextSmall}>
+                Toque no botão + para adicionar seu primeiro pet.
+              </Text>
+            </View>
+          )}
 
           <View style={{ height: 50 }} />
           
@@ -304,6 +353,106 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
+  },
+  // --- Card de Pet ---
+  petCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 12,
+    overflow: 'hidden',
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  petImage: {
+    width: 100,
+    height: 100,
+    backgroundColor: '#F0F0F0',
+  },
+  petInfo: {
+    flex: 1,
+    padding: 12,
+    justifyContent: 'center',
+  },
+  petName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  petDetails: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 2,
+  },
+  // --- Novo estilo para cards (estilo semelhante ao anexo)
+  cardWrapper: {
+    marginBottom: 18,
+  },
+  card: {
+    borderRadius: 18,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  cardImage: {
+    width: '100%',
+    height: 200,
+    resizeMode: 'cover',
+  },
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  cardAvatar: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    marginRight: 12,
+    borderWidth: 2,
+    borderColor: '#fff',
+    backgroundColor: '#eee',
+  },
+  cardText: {
+    flex: 1,
+  },
+  cardName: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#111',
+    marginBottom: 4,
+  },
+  cardDescription: {
+    fontSize: 14,
+    color: '#777',
+  },
+  cardAgeBadge: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#eee',
+    marginLeft: 8,
+    alignSelf: 'flex-start',
+  },
+  cardAgeText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#333',
   },
   
   // --- Bottom Tab Bar ---

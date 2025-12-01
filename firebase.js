@@ -12,6 +12,7 @@ import {
     setDoc,
     updateDoc,
 } from "firebase/firestore";
+import { getDownloadURL, getStorage, ref as storageRef, uploadBytes } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -26,6 +27,28 @@ const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const storage = getStorage(app);
+
+/**
+ * Upload a local file (uri) to Firebase Storage and return the download URL
+ * @param {string} path - storage path (e.g., `profiles/{uid}.jpg`)
+ * @param {string} uri - local file URI
+ * @returns {Promise<string>} download URL
+ */
+export const uploadFile = async (path, uri) => {
+  try {
+    // fetch the file from local filesystem and get blob
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const ref = storageRef(storage, path);
+    await uploadBytes(ref, blob);
+    const url = await getDownloadURL(ref);
+    return url;
+  } catch (error) {
+    console.error('Error uploading file to storage:', error);
+    throw error;
+  }
+};
 
 // ===== FIRESTORE UTILITIES =====
 

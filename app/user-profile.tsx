@@ -3,21 +3,21 @@ import * as ImagePicker from "expo-image-picker";
 import { Stack, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { updateDocument } from "../firebase";
+import { getDocument, updateDocument, uploadFile } from "../firebase";
 import { getCurrentUser } from "../services/authService";
 
 // =========================================================================
@@ -36,14 +36,27 @@ const UserProfileScreen = () => {
 
   const router = useRouter();
 
-  // Carregar dados do usuário ao montar o componente
+  // Carregar dados do usuário (Auth + Firestore) ao montar o componente
   useEffect(() => {
     const loadUserData = async () => {
       try {
         const user = getCurrentUser();
-        if (user && user.email) {
-          setEmail(user.email);
+        if (user) {
+          // valores a partir do Auth como fallback
+          setEmail(user.email || '');
           setUsername(user.displayName || '');
+
+          // tentar carregar dados adicionais do Firestore
+          const profile: any = await getDocument('users', user.uid);
+          if (profile) {
+            setUsername(profile.username || user.displayName || '');
+            setEmail(profile.email || user.email || '');
+            setPhone(profile.phone || '');
+            setCity(profile.city || '');
+            setStateRegion(profile.state || '');
+            setNeighborhood(profile.neighborhood || '');
+            setProfileImage(profile.profileImage || null);
+          }
         }
       } catch (error) {
         console.error('Erro ao carregar dados do usuário:', error);
@@ -105,6 +118,21 @@ const UserProfileScreen = () => {
         return;
       }
 
+      // If profileImage is a local URI (picked from device), upload to Storage
+      let profileImageUrl = profileImage || null;
+      try {
+        if (profileImage && !profileImage.startsWith('http')) {
+          // create a storage path (keep extension if possible)
+          const extMatch = profileImage.split('.').pop();
+          const ext = extMatch && extMatch.length <= 5 ? extMatch : 'jpg';
+          const storagePath = `profiles/${user.uid}.${ext}`;
+          profileImageUrl = await uploadFile(storagePath, profileImage);
+        }
+      } catch (uploadErr) {
+        console.warn('Falha ao enviar imagem, continuando sem imagem:', uploadErr);
+        // leave profileImageUrl as null or previous value
+      }
+
       await updateDocument('users', user.uid, {
         username,
         email,
@@ -112,7 +140,7 @@ const UserProfileScreen = () => {
         city,
         state: stateRegion,
         neighborhood,
-        profileImage: profileImage || null,
+        profileImage: profileImageUrl || null,
         updatedAt: new Date(),
       });
 

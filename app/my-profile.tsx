@@ -1,21 +1,34 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import {
-  Alert,
-  BackHandler,
-  Image,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    BackHandler,
+    Image,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
+import { getDocument } from "../firebase";
+import { getCurrentUser } from "../services/authService";
 
-// Dados de Perfil Mock (Mantido)
+// Interface para dados de perfil
+interface UserProfile {
+  username: string;
+  email: string;
+  phone: string;
+  city: string;
+  state: string;
+  neighborhood: string;
+  profileImage: string | null;
+}
+
+// Dados de Perfil Mock (Backup)
 const MOCK_USER_PROFILE = {
   imageUri: "https://placehold.co/100x100/A0A0A0/FFFFFF?text=EU",
   username: "Seu Usuário",
@@ -88,15 +101,33 @@ const OptionButton: React.FC<OptionButtonProps> = ({
 const MyProfileScreen = () => {
   const router = useRouter();
   const currentRoute: string = "/my-profile"; // Current screen
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   // LÓGICA DE VOLTAR: SEMPRE LEVA PARA A HOME (Mantido)
   const handleGoBack = () => {
     router.replace("/homeScreen" as never);
   };
 
-  // Handle do botão de voltar do sistema (Mantido)
+  // Carregar dados do perfil ao focar na tela
   useFocusEffect(
     useCallback(() => {
+      const loadUserProfile = async () => {
+        try {
+          const user = getCurrentUser();
+          if (user) {
+            const profileData = await getDocument('users', user.uid);
+            if (profileData) {
+              setUserProfile(profileData as UserProfile);
+            }
+          }
+        } catch (error) {
+          console.error('Erro ao carregar perfil:', error);
+        }
+      };
+
+      loadUserProfile();
+
+      // Handle do botão de voltar do sistema (Mantido)
       const onBackPress = () => {
         handleGoBack();
         return true; // Previne o comportamento padrão
@@ -189,11 +220,13 @@ const MyProfileScreen = () => {
         {/* Informações do Usuário */}
         <View style={styles.userInfoContainer}>
           <Image
-            source={{ uri: MOCK_USER_PROFILE.imageUri }}
+            source={{ uri: userProfile?.profileImage || MOCK_USER_PROFILE.imageUri }}
             style={styles.profileImage}
           />
-          <Text style={styles.usernameText}>{MOCK_USER_PROFILE.username}</Text>
-          <Text style={styles.locationText}>{MOCK_USER_PROFILE.location}</Text>
+          <Text style={styles.usernameText}>{userProfile?.username || MOCK_USER_PROFILE.username}</Text>
+          <Text style={styles.locationText}>
+            {userProfile ? `${userProfile.city}, ${userProfile.state}` : MOCK_USER_PROFILE.location}
+          </Text>
         </View>
 
         {/* Seção de Opções */}
