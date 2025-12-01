@@ -1,6 +1,8 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback } from "react";
 import {
+  Alert,
   BackHandler,
   Image,
   Platform,
@@ -11,9 +13,7 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Alert, // <-- Importado para a confirmação
 } from "react-native";
-import Ionicons from "react-native-vector-icons/Ionicons";
 
 // Dados de Perfil Mock (Mantido)
 const MOCK_USER_PROFILE = {
@@ -87,7 +87,7 @@ const OptionButton: React.FC<OptionButtonProps> = ({
 
 const MyProfileScreen = () => {
   const router = useRouter();
-  const currentRoute = router.pathname || "/my-profile";
+  const currentRoute: string = "/my-profile"; // Current screen
 
   // LÓGICA DE VOLTAR: SEMPRE LEVA PARA A HOME (Mantido)
   const handleGoBack = () => {

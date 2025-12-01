@@ -1,3 +1,4 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback } from "react";
 import {
@@ -11,7 +12,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Ionicons from "react-native-vector-icons/Ionicons";
 
 // =========================================================================
 // Componente auxiliar para a Tab Bar
@@ -58,7 +58,7 @@ const TabItem: React.FC<TabItemProps> = ({
 
 const FavoritesScreen = () => {
   const router = useRouter();
-  const currentRoute = router.pathname || "/favorites";
+  const currentRoute: string = "/favorites"; // Current screen
 
   const handleGoBack = () => {
     // Garante que o usuário volte para a Home

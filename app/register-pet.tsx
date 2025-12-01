@@ -1,20 +1,23 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import * as ImagePicker from 'expo-image-picker';
+import { Stack, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    StyleSheet,
-    View,
-    Text,
-    TouchableOpacity,
-    SafeAreaView,
-    ScrollView,
-    TextInput,
-    Platform,
-    Alert,
-    Image,
-    FlatList, 
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useRouter, Stack } from 'expo-router';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import * as ImagePicker from 'expo-image-picker'; 
+import { addDocument } from '../firebase';
+import { getCurrentUser } from '../services/authService';
 
 // =========================================================================
 // TIPOS E DADOS
@@ -42,7 +45,8 @@ const RegisterPetScreen = () => {
     const [size, setSize] = useState<Size>(null);
     const [isVaccinated, setIsVaccinated] = useState<BooleanOption>(null);
     const [isNeutered, setIsNeutered] = useState<BooleanOption>(null);
-    const [selectedImages, setSelectedImages] = useState<string[]>([]); 
+    const [selectedImages, setSelectedImages] = useState<string[]>([]);
+    const [isLoading, setIsLoading] = useState(false); 
 
     // --- Funções de Imagem (Inalteradas) ---
     const handleImageUpload = async () => {
@@ -72,22 +76,43 @@ const RegisterPetScreen = () => {
         setSelectedImages(prev => prev.filter(uri => uri !== uriToRemove));
     };
     
-    // --- Função de Submissão ---
-    const handleSubmit = () => {
+    // --- Função de Submissão com Firebase ---
+    const handleSubmit = async () => {
         if (!name || !age || !breed || !gender || !size || isVaccinated === null || isNeutered === null || selectedImages.length === 0) {
             Alert.alert('Campos Obrigatórios', 'Por favor, preencha todos os campos obrigatórios e adicione pelo menos uma foto.');
             return;
         }
         
-        console.log({
-            name, age, color, breed, description, gender, size, 
-            isVaccinated, 
-            isNeutered,
-            totalImages: selectedImages.length,
-            imageUris: selectedImages,
-        });
+        setIsLoading(true);
+        try {
+            const user = getCurrentUser();
+            if (!user) {
+                Alert.alert('Erro', 'Usuário não autenticado.');
+                return;
+            }
 
-        Alert.alert('Sucesso!', `${name} cadastrado com sucesso!`);
+            await addDocument('pets', {
+                name,
+                age: parseInt(age),
+                color,
+                breed,
+                description,
+                gender,
+                size,
+                isVaccinated,
+                isNeutered,
+                images: selectedImages,
+                ownerId: user.uid,
+                createdAt: new Date(),
+            });
+
+            Alert.alert('Sucesso!', `${name} cadastrado com sucesso!`);
+            router.replace('/(tabs)' as never);
+        } catch (error: any) {
+            Alert.alert('Erro', error.message || 'Falha ao cadastrar pet.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     // =========================================================================
@@ -384,8 +409,16 @@ const RegisterPetScreen = () => {
                     />
                     
                     {/* --- BOTÃO DE CADASTRAR --- */}
-                    <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                        <Text style={[styles.submitButtonText, { color: '#5a5a5aff' }]}>Cadastrar</Text>
+                    <TouchableOpacity 
+                        style={[styles.submitButton, isLoading && { opacity: 0.6 }]} 
+                        onPress={handleSubmit}
+                        disabled={isLoading}
+                    >
+                        {isLoading ? (
+                            <ActivityIndicator color="#5a5a5aff" />
+                        ) : (
+                            <Text style={[styles.submitButtonText, { color: '#5a5a5aff' }]}>Cadastrar</Text>
+                        )}
                     </TouchableOpacity>
 
                 </View>

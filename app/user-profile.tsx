@@ -1,6 +1,9 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
+import * as ImagePicker from "expo-image-picker";
 import { Stack, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   KeyboardAvoidingView,
@@ -14,9 +17,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-// Trocando a importação direta do Ionicons para garantir a compatibilidade de ambiente
-import * as ImagePicker from "expo-image-picker";
-import Ionicons from "react-native-vector-icons/Ionicons";
+import { updateDocument } from "../firebase";
+import { getCurrentUser } from "../services/authService";
 
 // =========================================================================
 // 1. COMPONENTE PRINCIPAL (UserProfileScreen)
@@ -26,12 +28,29 @@ const UserProfileScreen = () => {
   const [username, setUsername] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
-  const [stateRegion, setStateRegion] = useState<string>(""); // "estado"
+  const [stateRegion, setStateRegion] = useState<string>("");
   const [city, setCity] = useState<string>("");
   const [neighborhood, setNeighborhood] = useState<string>("");
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const router = useRouter();
+
+  // Carregar dados do usuário ao montar o componente
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const user = getCurrentUser();
+        if (user && user.email) {
+          setEmail(user.email);
+          setUsername(user.displayName || '');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados do usuário:', error);
+      }
+    };
+    loadUserData();
+  }, []);
 
   // --- Função para Upload/Seleção de Foto ---
   const handleImagePicker = async () => {
@@ -61,8 +80,8 @@ const UserProfileScreen = () => {
     }
   };
 
-  // --- Função para Adicionar/Atualizar Perfil (Ação do Botão) ---
-  const handleAddProfile = () => {
+  // --- Função para Adicionar/Atualizar Perfil com Firebase ---
+  const handleAddProfile = async () => {
     if (
       !username ||
       !email ||
@@ -78,32 +97,43 @@ const UserProfileScreen = () => {
       return;
     }
 
-    console.log("Perfil do usuário configurado:", {
-      username,
-      email,
-      phone,
-      city,
-      state: stateRegion,
-      neighborhood,
-      profileImage,
-    });
+    setIsSaving(true);
+    try {
+      const user = getCurrentUser();
+      if (!user) {
+        Alert.alert('Erro', 'Usuário não autenticado.');
+        return;
+      }
 
-    Alert.alert(
-      "Sucesso!",
-      "Seu perfil foi configurado com sucesso. Vamos adotar!"
-    );
+      await updateDocument('users', user.uid, {
+        username,
+        email,
+        phone,
+        city,
+        state: stateRegion,
+        neighborhood,
+        profileImage: profileImage || null,
+        updatedAt: new Date(),
+      });
 
-    // CORREÇÃO: Redireciona para o arquivo homeScreen.tsx
-    router.replace("/homeScreen" as never);
+      Alert.alert(
+        "Sucesso!",
+        "Seu perfil foi atualizado com sucesso!"
+      );
+
+      // Pequeno delay para garantir que o perfil foi salvo
+      setTimeout(() => {
+        router.replace("/homeScreen" as never);
+      }, 500);
+    } catch (error: any) {
+      Alert.alert('Erro', error.message || 'Falha ao atualizar perfil.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleGoBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      // CORREÇÃO: Redireciona para o arquivo homeScreen.tsx (ou a rota inicial '/')
-      router.replace("/homeScreen" as never);
-    }
+    router.back();
   };
 
   return (
@@ -235,11 +265,16 @@ const UserProfileScreen = () => {
 
             {/* Botão Adicionar */}
             <TouchableOpacity
-              style={styles.addButton}
+              style={[styles.addButton, isSaving && { opacity: 0.6 }]}
               onPress={handleAddProfile}
               activeOpacity={0.8}
+              disabled={isSaving}
             >
-              <Text style={styles.addButtonText}>Adicionar</Text>
+              {isSaving ? (
+                <ActivityIndicator color="#333" />
+              ) : (
+                <Text style={styles.addButtonText}>Adicionar</Text>
+              )}
             </TouchableOpacity>
           </View>
         </ScrollView>

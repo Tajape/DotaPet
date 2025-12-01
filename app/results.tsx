@@ -1,18 +1,18 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  TouchableOpacity,
-  ScrollView,
-  Platform,
-  StatusBar,
+  Dimensions,
   Image,
-  Dimensions, // Para pegar a largura da tela e fazer o card full width
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const { width } = Dimensions.get('window'); // Pega a largura da tela
 const CARD_WIDTH = width - 40; // Largura do card: largura da tela - padding (20 de cada lado)

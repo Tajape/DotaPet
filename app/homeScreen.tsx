@@ -1,17 +1,20 @@
-import React from 'react';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Stack, useRouter } from 'expo-router';
+import { where } from 'firebase/firestore';
+import React, { useEffect, useState } from 'react';
 import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
-  ScrollView,
   Image,
   Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router'; 
-import Ionicons from 'react-native-vector-icons/Ionicons'; 
+import { queryDocuments } from '../firebase';
+import { getCurrentUser } from '../services/authService';
 
 // Definição de tipos para as props do componente TabItem
 interface TabItemProps {
@@ -33,9 +36,34 @@ const MOCK_USER_PROFILE = {
 
 const HomeScreen = () => {
   const router = useRouter();
-  // Usa router.pathname para saber qual tela estamos *realmente*
-  // e '/homeScreen' como fallback.
-  const currentRoute = router.pathname || '/homeScreen'; 
+  const [pets, setPets] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const currentRoute: string = '/(tabs)';
+
+  // Carregar pets do usuário ao montar
+  useEffect(() => {
+    const loadUserPets = async () => {
+      setIsLoading(true);
+      try {
+        const user = getCurrentUser();
+        if (!user) {
+          console.log('Usuário não autenticado');
+          return;
+        }
+
+        const userPets = await queryDocuments('pets', [
+          where('ownerId', '==', user.uid)
+        ]);
+        setPets(userPets);
+      } catch (error) {
+        console.error('Erro ao carregar pets:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadUserPets();
+  }, []); 
 
   // --- Funções de Navegação CORRIGIDA FINAL ---
   const handleTabPress = (route: string) => {

@@ -1,19 +1,23 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Stack, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
+  ActivityIndicator,
+  Alert,
   Dimensions,
   Image,
   ImageSourcePropType,
-  Alert, // Adicionando Alert para feedback de erro/sucesso
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-// Trocando a importação direta do Ionicons para garantir a compatibilidade de ambiente
-import Ionicons from 'react-native-vector-icons/Ionicons'; 
+import { loginUser } from '../services/authService';
 
 // Define a largura da tela para uso em estilos responsivos (Embora não usado diretamente no estilo abaixo, é útil manter)
 const { width } = Dimensions.get('window');
@@ -65,26 +69,31 @@ const SocialButton: React.FC<SocialButtonProps> = ({
 const TelaLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  
-  // 🎯 NOVO ESTADO para controlar a visibilidade da senha
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   const router = useRouter();
 
-  // --- Funções de Ação ---
-  const handleLogin = () => {
-    // 1. Validação simples para demonstração
+  // --- Função de Login com Firebase ---
+  const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Erro de Login', 'Por favor, insira e-mail e senha.');
       return;
     }
 
-    // 2. Lógica real de autenticação (simulada)
-    console.log('Tentativa de Login:', { email, password });
-    
-    // 3. REDIRECIONAMENTO CORRIGIDO: Leva para a tela homeScreen
-    // Usando 'as never' para tipagem do expo-router
-    router.replace('/homeScreen' as never);
+    setIsLoading(true);
+    try {
+      await loginUser(email, password);
+      Alert.alert('Sucesso!', 'Login realizado com sucesso!');
+      // Pequeno delay para garantir que o auth state foi atualizado
+      setTimeout(() => {
+        router.replace('/homeScreen' as never);
+      }, 500);
+    } catch (error: any) {
+      Alert.alert('Erro de Login', error.message || 'Falha ao fazer login.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleForgotPassword = () => {
@@ -105,15 +114,21 @@ const TelaLogin = () => {
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* Cabeçalho Personalizado (Seta + Título) */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Bem vindo de volta!</Text>
-      </View>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        {/* Cabeçalho Personalizado (Seta + Título) */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Bem vindo de volta!</Text>
+        </View>
 
-      <View style={styles.contentContainer}>
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="always">
+          <View style={styles.contentContainer}>
         {/* Campo de E-mail */}
         <Text style={styles.label}>E-mail</Text>
         <TextInput
@@ -128,18 +143,28 @@ const TelaLogin = () => {
 
         {/* 🎯 CAMPO DE SENHA COM OLHINHO */}
         <Text style={styles.label}>Senha</Text>
-        <View style={styles.passwordInputContainer}>
+        <View style={styles.passwordInputContainer} pointerEvents="box-none">
           <TextInput
             style={styles.passwordInputField}
             placeholder="insira aqui sua senha"
             placeholderTextColor="#999"
             value={password}
             onChangeText={setPassword}
-            secureTextEntry={!isPasswordVisible} // Controlado pelo estado
+            onSubmitEditing={() => handleLogin()}
+            secureTextEntry={!isPasswordVisible}
+            editable={true}
+            selectTextOnFocus={false}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="default"
+            returnKeyType="go"
+            blurOnSubmit={false}
           />
           <TouchableOpacity 
-            style={styles.toggleButton} 
+            style={styles.toggleButton}
             onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+            activeOpacity={0.7}
+            pointerEvents="box-only"
           >
             <Ionicons 
               name={isPasswordVisible ? "eye-off" : "eye"} 
@@ -158,8 +183,16 @@ const TelaLogin = () => {
         </TouchableOpacity>
 
         {/* Botão Entrar */}
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-          <Text style={styles.loginButtonText}>Entrar</Text>
+        <TouchableOpacity 
+          style={[styles.loginButton, isLoading && { opacity: 0.6 }]} 
+          onPress={handleLogin}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#333" />
+          ) : (
+            <Text style={styles.loginButtonText}>Entrar</Text>
+          )}
         </TouchableOpacity>
 
         {/* Separador "ou" */}
@@ -182,7 +215,9 @@ const TelaLogin = () => {
             onPress={handleFacebookLogin}
           />
         </View>
-      </View>
+        </View>
+      </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -195,6 +230,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   header: {
     flexDirection: 'row',

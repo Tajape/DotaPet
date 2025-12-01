@@ -1,14 +1,18 @@
 import { Stack } from 'expo-router';
-// Importe o seu contexto de autenticação ou crie uma variável temporária
-// import { useAuth } from '../hooks/useAuth'; 
+import { ActivityIndicator, View } from 'react-native';
+import { useAuth } from '../hooks/useAuth';
 
 export default function RootLayout() {
-    // ⚠️ SUBSTITUA ISTO PELA SUA LÓGICA DE AUTENTICAÇÃO REAL!
-    // Por enquanto, vamos forçar para que seja 'false' (usuário deslogado)
-    // assim sua tela 'welcome' aparece.
-    const isAuthenticated = false; 
+    const { isAuthenticated, isLoading } = useAuth();
     
-    // Você deve usar um hook real: const { isAuthenticated } = useAuth();
+    // Show loading screen while checking auth state
+    if (isLoading) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator size="large" color="#0000ff" />
+            </View>
+        );
+    }
 
     return (
         <Stack>
@@ -24,6 +28,15 @@ export default function RootLayout() {
                     options={{ headerShown: false }} 
                 />
             )}
+            
+            {/* Rotas de Autenticação (sempre disponíveis) */}
+            <Stack.Screen name="login" options={{ headerShown: false }} />
+            <Stack.Screen name="register" options={{ headerShown: false }} />
+            <Stack.Screen name="user-profile" options={{ headerShown: false }} />
+            <Stack.Screen name="homeScreen" options={{ headerShown: false }} />
+            <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
+            <Stack.Screen name="new-password" options={{ headerShown: false }} />
+            <Stack.Screen name="verify-code" options={{ headerShown: false }} />
             
             {/* Opcional: Rotas modais que devem estar disponíveis em qualquer estado */}
             <Stack.Screen name="modal" options={{ presentation: 'modal' }} />

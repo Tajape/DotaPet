@@ -1,17 +1,21 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Stack, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
   StyleSheet,
-  View,
   Text,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
-  Alert,
-  ScrollView,
+  View,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
-import Ionicons from '@expo/vector-icons/Ionicons'; 
+import { registerUser } from '../services/authService';
 
 // =========================================================================
 // 1. COMPONENTE PRINCIPAL (RegisterScreen)
@@ -22,16 +26,14 @@ const RegisterScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
-  // Estados para visibilidade da senha (mantendo a funcionalidade do "olhinho")
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
 
-  // --- Função de Registro (Ação do Botão "Entrar") ---
-  const handleRegister = () => {
-    // 1. Validações básicas
+  // --- Função de Registro com Firebase ---
+  const handleRegister = async () => {
     if (!name || !email || !password || !confirmPassword) {
       Alert.alert('Atenção', 'Por favor, preencha todos os campos.');
       return;
@@ -45,77 +47,48 @@ const RegisterScreen = () => {
       return;
     }
 
-    // 2. Lógica de registro (Simulação)
-    console.log('Tentativa de registro bem-sucedida.');
-    
-    // 3. Redireciona para a tela de Configuração de Perfil
-    // Rota: /profile-setup
-    router.replace('/user-profile');
+    setIsLoading(true);
+    try {
+      await registerUser(email, password, name);
+      Alert.alert('Sucesso!', 'Usuário registrado com sucesso!');
+      // Pequeno delay para garantir que o usuário foi criado
+      setTimeout(() => {
+        router.push('/user-profile' as never);
+      }, 500);
+    } catch (error: any) {
+      Alert.alert('Erro no Registro', error.message || 'Falha ao registrar usuário.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoBack = () => {
     router.back();
   };
 
-  // 🎯 Componente de Input de Senha Reutilizável
-  const PasswordInput = ({ 
-      label, 
-      value, 
-      onChangeText, 
-      placeholder, 
-      isVisible, 
-      toggleVisibility 
-    }: {
-      label: string;
-      value: string;
-      onChangeText: (text: string) => void;
-      placeholder: string;
-      isVisible: boolean;
-      toggleVisibility: () => void;
-    }) => (
-    <>
-      <Text style={styles.label}>{label}</Text>
-      <View style={styles.passwordInputContainer}>
-        <TextInput
-          style={styles.passwordInputField}
-          placeholder={placeholder}
-          placeholderTextColor="#999"
-          value={value}
-          onChangeText={onChangeText}
-          secureTextEntry={!isVisible}
-        />
-        <TouchableOpacity 
-          style={styles.toggleButton} 
-          onPress={toggleVisibility}
-        >
-          <Ionicons 
-            name={isVisible ? "eye-off" : "eye"} 
-            size={24} 
-            color="#999" 
-          />
-        </TouchableOpacity>
-      </View>
-    </>
-  );
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen options={{ headerShown: false }} />
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
-      {/* --- Cabeçalho --- */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Cadastre-se</Text>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        {/* --- Cabeçalho --- */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitle}>Cadastre-se</Text>
+          </View>
+          <View style={styles.backButtonPlaceholder} />
         </View>
-        <View style={styles.backButtonPlaceholder} />
-      </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.contentContainer}>
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="always">
+          <View style={styles.contentContainer}>
           
           {/* Input: Nome */}
           <Text style={styles.label}>Nome</Text>
@@ -141,32 +114,69 @@ const RegisterScreen = () => {
           />
 
           {/* Input: Senha */}
-          <PasswordInput
-            label="Senha"
-            value={password}
-            onChangeText={setPassword}
-            placeholder="insira aqui sua senha"
-            isVisible={isPasswordVisible}
-            toggleVisibility={() => setIsPasswordVisible(!isPasswordVisible)}
-          />
+          <Text style={styles.label}>Senha</Text>
+          <View style={styles.passwordInputContainer}>
+            <TextInput
+              style={styles.passwordInputField}
+              placeholder="insira aqui sua senha"
+              placeholderTextColor="#999"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!isPasswordVisible}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <TouchableOpacity 
+              style={styles.toggleButton}
+              onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+              activeOpacity={0.7}
+            >
+              <Ionicons 
+                name={isPasswordVisible ? "eye-off" : "eye"} 
+                size={24} 
+                color="#999" 
+              />
+            </TouchableOpacity>
+          </View>
 
           {/* Input: Confirme sua senha */}
-          <PasswordInput
-            label="Confirme sua senha"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            placeholder="insira aqui sua senha novamente"
-            isVisible={isConfirmPasswordVisible}
-            toggleVisibility={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
-          />
+          <Text style={styles.label}>Confirme sua senha</Text>
+          <View style={styles.passwordInputContainer}>
+            <TextInput
+              style={styles.passwordInputField}
+              placeholder="insira aqui sua senha novamente"
+              placeholderTextColor="#999"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!isConfirmPasswordVisible}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <TouchableOpacity 
+              style={styles.toggleButton}
+              onPress={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
+              activeOpacity={0.7}
+            >
+              <Ionicons 
+                name={isConfirmPasswordVisible ? "eye-off" : "eye"} 
+                size={24} 
+                color="#999" 
+              />
+            </TouchableOpacity>
+          </View>
 
           {/* Botão Entrar (Finalizar Cadastro) */}
           <TouchableOpacity 
-            style={styles.registerButton} 
+            style={[styles.registerButton, isLoading && { opacity: 0.6 }]} 
             onPress={handleRegister}
             activeOpacity={0.8}
+            disabled={isLoading}
           >
-            <Text style={styles.registerButtonText}>Entrar</Text>
+            {isLoading ? (
+              <ActivityIndicator color="#333" />
+            ) : (
+              <Text style={styles.registerButtonText}>Entrar</Text>
+            )}
           </TouchableOpacity>
 
           {/* Linha separadora "ou" */}
@@ -189,6 +199,7 @@ const RegisterScreen = () => {
 
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
