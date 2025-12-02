@@ -1,26 +1,43 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Dimensions,
-  Image,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Dimensions,
+    Image,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
-const { width } = Dimensions.get('window'); // Pega a largura da tela
-const CARD_WIDTH = width - 40; // Largura do card: largura da tela - padding (20 de cada lado)
+const { width } = Dimensions.get('window');
+const CARD_WIDTH = width - 40;
 
-// Dados de perfil simulados (Apenas para preencher o header visualmente)
-const MOCK_USER_PROFILE = {
-  imageUri: 'https://placehold.co/100x100/A0A0A0/FFFFFF?text=EU',
-  username: 'SeuUsuário',
+interface Pet {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+  type?: 'cat' | 'dog';
+  breed?: string;
+  color?: string;
+  gender?: string;
+  size?: string;
+  isVaccinated?: boolean;
+  isNeutered?: boolean;
+}
+
+const getPetTypeFromBreed = (breed?: string): 'cat' | 'dog' => {
+  if (!breed) return 'dog';
+  const catBreeds = ['persa', 'siamês', 'siamês', 'angorá', 'sphynx'];
+  return catBreeds.some(catBreed => 
+    breed.toLowerCase().includes(catBreed)
+  ) ? 'cat' : 'dog';
 };
 
 // =========================================================================
@@ -30,80 +47,106 @@ const MOCK_USER_PROFILE = {
 const ResultsScreen = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
-  // Captura o termo de busca ('q') passado pela tela anterior
-  const searchTerm = params.q || 'Todos os Pets'; 
+  
+  // Get search parameters
+  const searchQuery = params.searchQuery as string || 'Todos os Pets';
+  const [isLoading, setIsLoading] = useState(true);
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadResults = async () => {
+      try {
+        // Check if we have results in the params
+        if (params.results) {
+          const results = JSON.parse(params.results as string);
+          setPets(results);
+        } else {
+          // If no results in params, try to fetch based on search query
+          // This is a fallback in case the results weren't passed correctly
+          // You might want to implement this part based on your app's needs
+          setError('Nenhum resultado encontrado para esta busca.');
+        }
+      } catch (err) {
+        console.error('Error loading results:', err);
+        setError('Ocorreu um erro ao carregar os resultados.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadResults();
+  }, [params]);
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.safeArea, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#FFC837" />
+        <Text style={styles.loadingText}>Carregando resultados...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={[styles.safeArea, styles.errorContainer]}>
+        <Ionicons name="warning-outline" size={48} color="#FFC837" />
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={20} color="#333" />
+          <Text style={styles.backButtonText}>Voltar</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      
-      {/* Oculta o header padrão do expo-router */}
       <Stack.Screen options={{ headerShown: false }} />
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
-      {/* ------------------ 2. CABEÇALHO (Adaptado da Home) ------------------ */}
+      {/* Header */}
       <View style={styles.header}>
-        {/* Botão Voltar */}
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={28} color="#333" />
         </TouchableOpacity>
 
-        {/* Informação de Perfil (MOCK) */}
-        <View style={styles.profileContainer}>
-          <Image
-            source={{ uri: MOCK_USER_PROFILE.imageUri }}
-            style={styles.profileImage}
-          />
-        </View>
-
-        {/* Título Dinâmico de Resultados */}
         <View style={styles.titleContainer}>
           <Text style={styles.titleText} numberOfLines={1}>
             Resultados de Busca
           </Text>
           <Text style={styles.subtitleText} numberOfLines={1}>
-            {searchTerm}
+            {searchQuery}
           </Text>
         </View>
       </View>
 
-      {/* ------------------ 3. CONTEÚDO PRINCIPAL (Scrollable) ------------------ */}
+      {/* Main Content */}
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.mainContent}>
-          
-          {/* Título da Seção (Mostra o que foi buscado) */}
           <Text style={styles.sectionTitle}>
-            Mostrando resultados para: "{searchTerm}"
+            {pets.length > 0 
+              ? `Mostrando ${pets.length} resultado${pets.length !== 1 ? 's' : ''} para: "${searchQuery}"`
+              : `Nenhum resultado encontrado para: "${searchQuery}"`
+            }
           </Text>
 
-          {/* SIMULAÇÃO DE CARDS DE PETS (Placeholders genéricos com o novo layout) */}
-          <PetCardFullWidthPlaceholder 
-            name="Garfield" 
-            description="Um gato bem mansinho😉 Ele gosta de brincar muito e de carinho na..." 
-            imageUri="https://img.freepik.com/fotos-gratis/gatinho-fofo-sentado-e-olhando-para-a-camera-no-fundo-preto_1000540-348.jpg?w=1380&t=st=1708890912~exp=1708891512~hmac=e2acfc4c1851e2202b545431682390a781b0a701918376ac1521a003302c0b49"
-            type="cat" // Pode ser 'cat' ou 'dog' para o ícone
-          />
-          <PetCardFullWidthPlaceholder 
-            name="Peter" 
-            description="Cachorro muito fofinho💕, precisa de um lar e de um amigo pra brin..." 
-            imageUri="https://img.freepik.com/fotos-gratis/adoravel-retrato-de-cachorrinho-isolado-no-fundo-branco_23-2150820786.jpg?w=1380&t=st=1708890983~exp=1708891583~hmac=69399435b5a228303b6016e792e3a79d20c58e72353a479ffc90f367fc366710"
-            type="dog"
-          />
-          <PetCardFullWidthPlaceholder 
-            name="Bolinha" 
-            description="Pug brincalhão e cheio de energia, adora crianças e passeios no parque." 
-            imageUri="https://img.freepik.com/fotos-gratis/tiro-foco-seletivo-de-um-adoravel-filhote-de-pug-dormindo-na-cama_181624-42869.jpg?w=1380&t=st=1708891007~exp=1708891607~hmac=e9cf41d8e151dd75cf6439e44ff2d23631f13b652875b16e09fb2a4d0ec5ed3f"
-            type="dog"
-          />
-          <PetCardFullWidthPlaceholder 
-            name="Miau" 
-            description="Gatinha persa meiga, um pouco tímida mas muito carinhosa quando se sente segura." 
-            imageUri="https://img.freepik.com/fotos-gratis/lindo-gato-persa-em-um-fundo-branco_1000540-425.jpg?w=1380&t=st=1708891030~exp=1708891630~hmac=f3844f2fb9a7b9735d1f56fc02fb71d7c3b88b32607f2ef84a14210a402377c8"
-            type="cat"
-          />
+          {/* Display actual search results */}
+          {pets.map((pet) => (
+            <PetCardFullWidthPlaceholder 
+              key={pet.id}
+              name={pet.name}
+              description={pet.description || 'Sem descrição disponível'}
+              imageUri={pet.imageUrl || 'https://placehold.co/400x300/CCCCCC/999999?text=Sem+Imagem'}
+              type={pet.type || getPetTypeFromBreed(pet.breed)}
+            />
+          ))}
 
           {/* Espaço extra para rolagem */}
           <View style={{ height: 50 }} />
-          
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -115,18 +158,26 @@ const ResultsScreen = () => {
 // =========================================================================
 
 interface PetCardFullWidthProps {
-    name: string;
-    description: string;
-    imageUri: string;
-    type: 'cat' | 'dog';
+  name: string;
+  description: string;
+  imageUri: string;
+  type: 'cat' | 'dog';
+  onPress?: () => void;
 }
 
-const PetCardFullWidthPlaceholder: React.FC<PetCardFullWidthProps> = ({ name, description, imageUri, type }) => (
-    <TouchableOpacity style={styles.fullWidthPetCard} activeOpacity={0.9}>
-        <Image source={{ uri: imageUri }} style={styles.fullWidthCardImage} />
-        
-        {/* Ícone de favorito no canto superior direito */}
-        <TouchableOpacity style={styles.fullWidthFavoriteButton}>
+const PetCardFullWidthPlaceholder: React.FC<PetCardFullWidthProps> = ({ 
+  name, 
+  description, 
+  imageUri, 
+  type,
+  onPress 
+}: PetCardFullWidthProps) => (
+  <TouchableOpacity style={styles.fullWidthPetCard} activeOpacity={0.9} onPress={onPress}>
+    <Image source={{ uri: imageUri }} style={styles.fullWidthCardImage} />
+    
+    {/* Ícone de favorito no canto superior direito */}
+    <TouchableOpacity style={styles.fullWidthFavoriteButton}>
+      <Ionicons name="heart-outline" size={28} color="#FFF" />
             <Ionicons name="heart-outline" size={28} color="#FFF" />
         </TouchableOpacity>
 
@@ -154,6 +205,43 @@ const PetCardFullWidthPlaceholder: React.FC<PetCardFullWidthProps> = ({ name, de
 // =========================================================================
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#666',
+    fontSize: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    marginTop: 10,
+    color: '#FF3B30',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 20,
+    alignSelf: 'center',
+  },
+  backButtonText: {
+    marginLeft: 5,
+    color: '#333',
+    fontWeight: '500',
+  },
   safeArea: { flex: 1, backgroundColor: '#fff' },
 
   // --- HEADER ---

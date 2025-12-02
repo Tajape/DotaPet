@@ -2,16 +2,17 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    Image,
-    Platform,
-    RefreshControl,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Dimensions,
+  Image,
+  Platform,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { getDocument, queryDocuments } from '../firebase';
 import { getCurrentUser } from '../services/authService';
@@ -41,6 +42,264 @@ interface UserProfile {
   profileImage?: string | null;
 }
 
+// Função para calcular dimensões responsivas
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const scale = (size: number) => (SCREEN_WIDTH / 375) * size; // Baseado no iPhone 8 (375x667)
+const verticalScale = (size: number) => (SCREEN_HEIGHT / 667) * size;
+const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
+
+// Estilos
+const createResponsiveStyles = () => StyleSheet.create({
+  // --- Estrutura Básica ---
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  scrollContent: {
+    paddingBottom: verticalScale(80) + (Platform.OS === 'ios' ? 20 : 0), 
+  },
+  mainContent: {
+    paddingHorizontal: scale(16),
+    paddingTop: verticalScale(8),
+  },
+  
+  // --- Cabeçalho (Header) ---
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: scale(15),
+    paddingVertical: verticalScale(10),
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + verticalScale(10) : verticalScale(10),
+  },
+  profileButton: {
+    marginRight: scale(10),
+  },
+  profileImage: {
+    width: scale(40),
+    height: scale(40),
+    borderRadius: scale(20),
+    borderWidth: 2,
+    borderColor: '#FFC837',
+  },
+  
+  // --- Barra de Pesquisa (Botão Visual) ---
+  searchButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F3F3',
+    borderRadius: scale(30),
+    height: verticalScale(48), 
+    paddingHorizontal: scale(15),
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  searchIcon: {
+    marginRight: scale(8),
+  },
+  searchPlaceholder: {
+    fontSize: moderateScale(14),
+    color: '#888',
+    flexShrink: 1,
+  },
+
+  // --- Título de Seção ---
+  sectionTitle: {
+    fontSize: moderateScale(20),
+    fontWeight: '700',
+    color: '#333',
+    marginTop: verticalScale(25),
+    marginBottom: verticalScale(15),
+  },
+
+  // --- Placeholder Card (Revertido) ---
+  placeholderCardContainer: {
+    backgroundColor: '#FFFBEA', 
+    borderWidth: 2,
+    borderColor: '#FFC837',
+    borderStyle: 'dashed',
+    borderRadius: scale(15),
+    padding: scale(20),
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: verticalScale(200),
+    textAlign: 'center',
+    marginTop: verticalScale(10),
+  },
+  placeholderText: {
+    fontSize: moderateScale(14),
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: verticalScale(5),
+  },
+  placeholderTextSmall: {
+    fontSize: moderateScale(12),
+    color: '#666',
+    textAlign: 'center',
+  },
+  // --- Card de Pet ---
+  petCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 12,
+    overflow: 'hidden',
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  petImage: {
+    width: 100,
+    height: 100,
+    backgroundColor: '#F0F0F0',
+  },
+  petInfo: {
+    flex: 1,
+    padding: 12,
+    justifyContent: 'center',
+  },
+  petName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  petDetails: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 2,
+  },
+  // --- Novo estilo para cards (estilo semelhante ao anexo)
+  cardWrapper: {
+    marginBottom: verticalScale(16),
+  },
+  card: {
+    borderRadius: scale(16),
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: scale(4) },
+    shadowOpacity: 0.1,
+    shadowRadius: scale(8),
+    elevation: 4,
+  },
+  cardImage: {
+    width: '100%',
+    height: verticalScale(180),
+    resizeMode: 'cover',
+  },
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: scale(12),
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  cardText: {
+    flex: 1,
+  },
+  cardName: {
+    fontSize: moderateScale(16),
+    fontWeight: '800',
+    color: '#111',
+    marginBottom: verticalScale(2),
+  },
+  cardDescription: {
+    fontSize: moderateScale(12),
+    color: '#777',
+  },
+  cardAgeBadge: {
+    backgroundColor: '#fff',
+    borderRadius: scale(18),
+    paddingHorizontal: scale(10),
+    paddingVertical: scale(4),
+    borderWidth: 1,
+    borderColor: '#eee',
+    marginLeft: scale(8),
+    alignSelf: 'flex-start',
+  },
+  cardAgeText: {
+    fontSize: moderateScale(12),
+    fontWeight: '700',
+    color: '#666',
+  },
+  favoriteButton: {
+    position: 'absolute',
+    top: scale(12),
+    right: scale(12),
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    borderRadius: scale(20),
+    width: scale(36),
+    height: scale(36),
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  // --- Bottom Tab Bar ---
+  tabBarContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFC837', 
+    height: verticalScale(75), 
+    paddingHorizontal: scale(5),
+    paddingTop: verticalScale(8),
+    borderTopLeftRadius: scale(30), 
+    borderTopRightRadius: scale(30),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -scale(5) },
+    shadowOpacity: 0.15,
+    shadowRadius: scale(10),
+    elevation: 10,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: verticalScale(5),
+  },
+  tabLabel: {
+    fontSize: moderateScale(10),
+    fontWeight: '500',
+    color: '#666',
+    marginTop: verticalScale(2),
+  },
+  tabLabelFocused: {
+    color: '#333',
+    fontWeight: '700',
+  },
+  
+  // --- Botão Central de Adicionar ---
+  addButton: {
+    backgroundColor: '#fff', 
+    width: scale(60),
+    height: scale(60),
+    borderRadius: scale(30),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: -verticalScale(25),
+    borderWidth: scale(4),
+    borderColor: '#FFC837', 
+    shadowColor: '#333',
+    shadowOffset: { width: 0, height: scale(3) },
+    shadowOpacity: 0.4,
+    shadowRadius: scale(4),
+    elevation: 8,
+  },
+});
+
 // =========================================================================
 // 1. COMPONENTE PRINCIPAL (HomeScreen)
 // =========================================================================
@@ -52,6 +311,8 @@ const HomeScreen = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const currentRoute: string = '/(tabs)';
+  const styles = createResponsiveStyles();
+
   // Carregar perfil e pets do usuário ao montar
   const loadData = async () => {
     setIsLoading(true);
@@ -89,7 +350,7 @@ const HomeScreen = () => {
   // --- Funções de Navegação CORRIGIDA FINAL ---
   const handleTabPress = (route: string) => {
     
-    // ✅ CORREÇÃO PRINCIPAL: Ignora o clique se a rota for a atual
+    // CORREÇÃO PRINCIPAL: Ignora o clique se a rota for a atual
     if (route === currentRoute) {
       console.log(`Já está em ${route}. Navegação ignorada.`);
       return; 
@@ -105,7 +366,7 @@ const HomeScreen = () => {
       // Usa replace para navegação de tabs
       router.replace('/my-profile' as never);
     } else if (route === '/favorites') { 
-      // ✅ AQUI ESTÁ A LIGAÇÃO PARA FAVORITOS (usando replace)
+      // AQUI ESTÁ A LIGAÇÃO PARA FAVORITOS (usando replace)
       router.replace('/favorites' as never); 
     } else if (route === '/homeScreen') {
        // Usa replace para navegação de tabs
@@ -115,14 +376,36 @@ const HomeScreen = () => {
 
   // Componente para renderizar cada card de pet
   const PetCard = ({ pet, index }: { pet: any; index: number }) => {
+    const [isFavorite, setIsFavorite] = useState(false);
     const firstImage = Array.isArray(pet.images) && pet.images.length > 0 
       ? pet.images[0] 
       : (pet.image || MOCK_USER_PROFILE.imageUri);
+    
+    const toggleFavorite = (e: any) => {
+      e.stopPropagation(); // Impede que o clique no coração navegue para a tela do pet
+      setIsFavorite(!isFavorite);
+      // Aqui você pode adicionar a lógica para salvar o favorito no banco de dados
+      // Por exemplo: saveFavorite(pet.id, !isFavorite);
+    };
     
     return (
       <TouchableOpacity style={styles.cardWrapper} onPress={() => router.push(`/pets/${pet.id}` as never)}>
         <View style={styles.card}>
           <Image source={{ uri: firstImage }} style={styles.cardImage} />
+          
+          {/* Botão de favorito */}
+          <TouchableOpacity 
+            style={styles.favoriteButton} 
+            onPress={toggleFavorite}
+            activeOpacity={0.8}
+          >
+            <Ionicons 
+              name={isFavorite ? 'heart' : 'heart-outline'} 
+              size={28} 
+              color={isFavorite ? '#FF3B30' : '#FFFFFF'} 
+            />
+          </TouchableOpacity>
+          
           <View style={styles.cardContent}>
             <View style={styles.cardText}>
               <Text style={styles.cardName}>{pet.name || 'Sem nome'}</Text>
@@ -194,9 +477,8 @@ const HomeScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <View style={styles.mainContent}>
+        <View style={[styles.mainContent, { marginTop: 15 }]}>
           
-          <Text style={styles.sectionTitle}>Seus Pets Registrados</Text>
 
           {isLoading ? (
             <View style={styles.placeholderCardContainer}>
@@ -273,254 +555,5 @@ const HomeScreen = () => {
   );
 };
 
-// =========================================================================
-// 5. ESTILIZAÇÃO
-// =========================================================================
-
-const styles = StyleSheet.create({
-  // --- Estrutura Básica ---
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  scrollContent: {
-    paddingBottom: 80 + (Platform.OS === 'ios' ? 20 : 0), 
-  },
-  mainContent: {
-    paddingHorizontal: 20,
-  },
-  
-  // --- Cabeçalho (Header) ---
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 10,
-  },
-  profileButton: {
-    marginRight: 10,
-  },
-  profileImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: '#FFC837',
-  },
-  
-  // --- Barra de Pesquisa (Botão Visual) ---
-  searchButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F3F3F3',
-    borderRadius: 30,
-    height: 48, 
-    paddingHorizontal: 15,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchPlaceholder: {
-    fontSize: 16,
-    color: '#888',
-  },
-
-  // --- Título de Seção ---
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#333',
-    marginTop: 25,
-    marginBottom: 15,
-  },
-
-  // --- Placeholder Card (Revertido) ---
-  placeholderCardContainer: {
-    backgroundColor: '#FFFBEA', 
-    borderWidth: 2,
-    borderColor: '#FFC837',
-    borderStyle: 'dashed',
-    borderRadius: 15,
-    padding: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 250,
-    textAlign: 'center',
-  },
-  placeholderText: {
-    fontSize: 16,
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 5,
-  },
-  placeholderTextSmall: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-  },
-  // --- Card de Pet ---
-  petCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 12,
-    overflow: 'hidden',
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  petImage: {
-    width: 100,
-    height: 100,
-    backgroundColor: '#F0F0F0',
-  },
-  petInfo: {
-    flex: 1,
-    padding: 12,
-    justifyContent: 'center',
-  },
-  petName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  petDetails: {
-    fontSize: 13,
-    color: '#666',
-    marginBottom: 2,
-  },
-  // --- Novo estilo para cards (estilo semelhante ao anexo)
-  cardWrapper: {
-    marginBottom: 18,
-  },
-  card: {
-    borderRadius: 18,
-    overflow: 'hidden',
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  cardImage: {
-    width: '100%',
-    height: 200,
-    resizeMode: 'cover',
-  },
-  cardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-  },
-  cardAvatar: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    marginRight: 12,
-    borderWidth: 2,
-    borderColor: '#fff',
-    backgroundColor: '#eee',
-  },
-  cardText: {
-    flex: 1,
-  },
-  cardName: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#111',
-    marginBottom: 4,
-  },
-  cardDescription: {
-    fontSize: 14,
-    color: '#777',
-  },
-  cardAgeBadge: {
-    backgroundColor: '#fff',
-    borderRadius: 18,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: '#eee',
-    marginLeft: 8,
-    alignSelf: 'flex-start',
-  },
-  cardAgeText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#333',
-  },
-  
-  // --- Bottom Tab Bar ---
-  tabBarContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'flex-start',
-    backgroundColor: '#FFC837', 
-    height: 85, 
-    paddingHorizontal: 5,
-    paddingTop: 8,
-    borderTopLeftRadius: 30, 
-    borderTopRightRadius: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -5 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 10,
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  tabItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 5,
-  },
-  tabLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#666',
-    marginTop: 2,
-  },
-  tabLabelFocused: {
-    color: '#333',
-    fontWeight: '700',
-  },
-  
-  // --- Botão Central de Adicionar ---
-  addButton: {
-    backgroundColor: '#fff', 
-    width: 65,
-    height: 65,
-    borderRadius: 35,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: -30,
-    borderWidth: 5,
-    borderColor: '#FFC837', 
-    shadowColor: '#333',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 8,
-  },
-});
-
 export default HomeScreen;
+
