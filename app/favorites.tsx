@@ -1,16 +1,17 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import {
-  BackHandler,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    BackHandler,
+    Platform,
+    RefreshControl,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 // =========================================================================
@@ -59,6 +60,15 @@ const TabItem: React.FC<TabItemProps> = ({
 const FavoritesScreen = () => {
   const router = useRouter();
   const currentRoute: string = "/favorites"; // Current screen
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    // Aqui você pode adicionar lógica para recarregar dados de favoritos
+    // Por enquanto, apenas simula um delay de carregamento
+    await new Promise(resolve => setTimeout(resolve, 500));
+    setRefreshing(false);
+  };
 
   const handleGoBack = () => {
     // Garante que o usuário volte para a Home
@@ -136,6 +146,9 @@ const FavoritesScreen = () => {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {renderEmptyState()}
       </ScrollView>

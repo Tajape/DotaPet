@@ -3,18 +3,18 @@ import * as ImagePicker from 'expo-image-picker';
 import { Stack, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Image,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Image,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { addDocument } from '../firebase';
 import { getCurrentUser } from '../services/authService';
@@ -37,7 +37,8 @@ const RegisterPetScreen = () => {
 
     // --- Estados do Formulário ---
     const [name, setName] = useState('');
-    const [age, setAge] = useState('');
+    const [ageNumber, setAgeNumber] = useState('');
+    const [ageUnit, setAgeUnit] = useState<'anos' | 'meses'>('anos');
     const [color, setColor] = useState('');
     const [breed, setBreed] = useState('');
     const [description, setDescription] = useState('');
@@ -78,7 +79,7 @@ const RegisterPetScreen = () => {
     
     // --- Função de Submissão com Firebase ---
     const handleSubmit = async () => {
-        if (!name || !age || !breed || !gender || !size || isVaccinated === null || isNeutered === null || selectedImages.length === 0) {
+        if (!name || !ageNumber || !breed || !gender || !size || isVaccinated === null || isNeutered === null || selectedImages.length === 0) {
             Alert.alert('Campos Obrigatórios', 'Por favor, preencha todos os campos obrigatórios e adicione pelo menos uma foto.');
             return;
         }
@@ -91,9 +92,11 @@ const RegisterPetScreen = () => {
                 return;
             }
 
+            const age = `${ageNumber} ${ageUnit}`;
+            
             await addDocument('pets', {
                 name,
-                age: parseInt(age),
+                age,
                 color,
                 breed,
                 description,
@@ -107,7 +110,10 @@ const RegisterPetScreen = () => {
             });
 
             Alert.alert('Sucesso!', `${name} cadastrado com sucesso!`);
-            router.replace('/(tabs)' as never);
+            // Pequeno delay para garantir que o pet foi salvo
+            setTimeout(() => {
+                router.replace('/homeScreen' as never);
+            }, 500);
         } catch (error: any) {
             Alert.alert('Erro', error.message || 'Falha ao cadastrar pet.');
         } finally {
@@ -345,13 +351,29 @@ const RegisterPetScreen = () => {
                     />
                     
                     <Text style={styles.inputLabel}>Idade</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Ex: 2 anos, 8 meses" 
-                        value={age}
-                        onChangeText={setAge}
-                        keyboardType="default"
-                    />
+                    <View style={styles.ageContainer}>
+                        <TextInput
+                            style={[styles.input, styles.ageInput]}
+                            placeholder="Ex: 3" 
+                            value={ageNumber}
+                            onChangeText={setAgeNumber}
+                            keyboardType="numeric"
+                        />
+                        <View style={styles.ageUnitSelector}>
+                            <TouchableOpacity 
+                                style={[styles.ageUnitButton, ageUnit === 'anos' && styles.ageUnitButtonActive]}
+                                onPress={() => setAgeUnit('anos')}
+                            >
+                                <Text style={[styles.ageUnitText, ageUnit === 'anos' && styles.ageUnitTextActive]}>Anos</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                                style={[styles.ageUnitButton, ageUnit === 'meses' && styles.ageUnitButtonActive]}
+                                onPress={() => setAgeUnit('meses')}
+                            >
+                                <Text style={[styles.ageUnitText, ageUnit === 'meses' && styles.ageUnitTextActive]}>Meses</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
                     
                     <Text style={styles.inputLabel}>Cor</Text>
                     <TextInput
@@ -611,6 +633,42 @@ const styles = StyleSheet.create({
     toggleButtonText: {
         fontSize: 16,
         fontWeight: '700',
+    },
+
+    // --- Seletor de Idade ---
+    ageContainer: {
+        flexDirection: 'row',
+        gap: 10,
+        alignItems: 'center',
+        marginTop: 10,
+        marginBottom: 20,
+    },
+    ageInput: {
+        flex: 1,
+    },
+    ageUnitSelector: {
+        flexDirection: 'row',
+        gap: 5,
+    },
+    ageUnitButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#DDD',
+        backgroundColor: '#FFF',
+    },
+    ageUnitButtonActive: {
+        backgroundColor: '#FFC837',
+        borderColor: '#FFC837',
+    },
+    ageUnitText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#666',
+    },
+    ageUnitTextActive: {
+        color: '#333',
     },
 
     // --- Botão de Submissão ---

@@ -1,17 +1,17 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useRouter } from 'expo-router';
-import { where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import {
-  Image,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    Image,
+    Platform,
+    RefreshControl,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { getDocument, queryDocuments } from '../firebase';
 import { getCurrentUser } from '../services/authService';
@@ -50,34 +50,39 @@ const HomeScreen = () => {
   const [pets, setPets] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const currentRoute: string = '/(tabs)';
   // Carregar perfil e pets do usuário ao montar
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const user = getCurrentUser();
-        if (!user) {
-          console.log('Usuário não autenticado');
-          return;
-        }
-
-        // carregar perfil salvo no Firestore
-        const profile = await getDocument('users', user.uid);
-        if (profile) setUserProfile(profile as UserProfile);
-
-        // carregar pets do usuário
-        const userPets = await queryDocuments('pets', [
-          where('ownerId', '==', user.uid)
-        ]);
-        setPets(userPets);
-      } catch (error) {
-        console.error('Erro ao carregar dados:', error);
-      } finally {
-        setIsLoading(false);
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const user = getCurrentUser();
+      if (!user) {
+        console.log('Usuário não autenticado');
+        return;
       }
-    };
 
+      // carregar perfil salvo no Firestore
+      const profile = await getDocument('users', user.uid);
+      if (profile) setUserProfile(profile as UserProfile);
+
+      // carregar TODOS os pets de todos os usuários
+      const allPets = await queryDocuments('pets', []);
+      setPets(allPets);
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
+
+  useEffect(() => {
     loadData();
   }, []);
 
@@ -106,6 +111,30 @@ const HomeScreen = () => {
        // Usa replace para navegação de tabs
        router.replace('/homeScreen' as never);
     }
+  };
+
+  // Componente para renderizar cada card de pet
+  const PetCard = ({ pet, index }: { pet: any; index: number }) => {
+    const firstImage = Array.isArray(pet.images) && pet.images.length > 0 
+      ? pet.images[0] 
+      : (pet.image || MOCK_USER_PROFILE.imageUri);
+    
+    return (
+      <TouchableOpacity style={styles.cardWrapper} onPress={() => router.push(`/pets/${pet.id}` as never)}>
+        <View style={styles.card}>
+          <Image source={{ uri: firstImage }} style={styles.cardImage} />
+          <View style={styles.cardContent}>
+            <View style={styles.cardText}>
+              <Text style={styles.cardName}>{pet.name || 'Sem nome'}</Text>
+              <Text numberOfLines={2} style={styles.cardDescription}>{pet.description || pet.details || ''}</Text>
+            </View>
+            <View style={styles.cardAgeBadge}>
+              <Text style={styles.cardAgeText}>{pet.age || ''}</Text>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
   };
 
   // --- Componente TabItem (para a barra inferior) ---
@@ -161,6 +190,9 @@ const HomeScreen = () => {
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         <View style={styles.mainContent}>
           
@@ -173,30 +205,9 @@ const HomeScreen = () => {
             </View>
           ) : pets && pets.length > 0 ? (
             <View>
-              {pets.map((pet, idx) => {
-                const firstImage = Array.isArray(pet.images) && pet.images.length > 0 ? pet.images[0] : (pet.image || MOCK_USER_PROFILE.imageUri);
-                const ageLabel = pet.age ? `idade ${pet.age}` : '';
-                const description = pet.description || pet.details || '';
-                const ownerAvatar = userProfile?.profileImage || MOCK_USER_PROFILE.imageUri;
-                return (
-                  <TouchableOpacity key={pet.id || idx} style={styles.cardWrapper} onPress={() => router.push(`/pets/${pet.id}` as never)}>
-                    <View style={styles.card}>
-                      <Image source={{ uri: firstImage }} style={styles.cardImage} />
-
-                      <View style={styles.cardContent}>
-                        <Image source={{ uri: ownerAvatar }} style={styles.cardAvatar} />
-                        <View style={styles.cardText}>
-                          <Text style={styles.cardName}>{pet.name || 'Sem nome'}</Text>
-                          <Text numberOfLines={2} style={styles.cardDescription}>{description}</Text>
-                        </View>
-                        <View style={styles.cardAgeBadge}>
-                          <Text style={styles.cardAgeText}>{ageLabel}</Text>
-                        </View>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
+              {pets.map((pet, idx) => (
+                <PetCard key={pet.id || idx} pet={pet} index={idx} />
+              ))}
             </View>
           ) : (
             <View style={styles.placeholderCardContainer}>

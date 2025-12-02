@@ -2,19 +2,19 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  Image,
-  ImageSourcePropType,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    Image,
+    ImageSourcePropType,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { loginUser } from '../services/authService';
@@ -90,7 +90,7 @@ const TelaLogin = () => {
         router.replace('/homeScreen' as never);
       }, 500);
     } catch (error: any) {
-      Alert.alert('Erro de Login', error.message || 'Falha ao fazer login.');
+      Alert.alert('Erro de Login', 'Verifique se o email ou senha estão corretos.');
     } finally {
       setIsLoading(false);
     }
