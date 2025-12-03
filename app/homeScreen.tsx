@@ -44,7 +44,7 @@ interface UserProfile {
 
 // Função para calcular dimensões responsivas
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const scale = (size: number) => (SCREEN_WIDTH / 375) * size; // Baseado no iPhone 8 (375x667)
+const scale = (size: number) => (SCREEN_WIDTH / 375) * size;
 const verticalScale = (size: number) => (SCREEN_HEIGHT / 667) * size;
 const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
@@ -301,7 +301,7 @@ const createResponsiveStyles = () => StyleSheet.create({
 });
 
 // =========================================================================
-// 1. COMPONENTE PRINCIPAL (HomeScreen)
+// COMPONENTE PRINCIPAL
 // =========================================================================
 
 const HomeScreen = () => {
@@ -310,7 +310,8 @@ const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const currentRoute: string = '/(tabs)';
+  // 🔧 CORREÇÃO: currentRoute agora é /homeScreen (não /(tabs))
+  const currentRoute: string = '/homeScreen';
   const styles = createResponsiveStyles();
 
   // Carregar perfil e pets do usuário ao montar
@@ -319,19 +320,28 @@ const HomeScreen = () => {
     try {
       const user = getCurrentUser();
       if (!user) {
-        console.log('Usuário não autenticado');
+        console.log('❌ Usuário não autenticado');
         return;
       }
 
-      // carregar perfil salvo no Firestore
-      const profile = await getDocument('users', user.uid);
-      if (profile) setUserProfile(profile as UserProfile);
+      // 🔧 ADICIONAR LOG
+      console.log('📱 Carregando dados do usuário:', user.uid);
 
-      // carregar TODOS os pets de todos os usuários
+      // Carregar perfil salvo no Firestore
+      const profile = await getDocument('users', user.uid);
+      if (profile) {
+        console.log('✅ Perfil carregado:', profile);
+        setUserProfile(profile as UserProfile);
+      } else {
+        console.warn('⚠️ Perfil não encontrado');
+      }
+
+      // Carregar TODOS os pets de todos os usuários
       const allPets = await queryDocuments('pets', []);
+      console.log('✅ Pets carregados:', allPets.length);
       setPets(allPets);
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      console.error('❌ Erro ao carregar dados:', error);
     } finally {
       setIsLoading(false);
     }
@@ -347,53 +357,48 @@ const HomeScreen = () => {
     loadData();
   }, []);
 
-  // --- Funções de Navegação CORRIGIDA FINAL ---
+  // --- Funções de Navegação ---
   const handleTabPress = (route: string) => {
+    console.log('🔗 Navegando para:', route);
     
-    // CORREÇÃO PRINCIPAL: Ignora o clique se a rota for a atual
-    if (route === currentRoute) {
-      console.log(`Já está em ${route}. Navegação ignorada.`);
-      return; 
-    }
-
     if (route === '/register-pet') {
-      // Usa push para adicionar a tela de cadastro sobre a atual
       router.push('/register-pet' as never); 
     } else if (route === '/searchScreen') {
-      // Usa replace para navegação de tabs (melhor para a barra inferior)
       router.replace('/searchScreen' as never); 
     } else if (route === '/my-profile') {
-      // Usa replace para navegação de tabs
       router.replace('/my-profile' as never);
     } else if (route === '/favorites') { 
-      // AQUI ESTÁ A LIGAÇÃO PARA FAVORITOS (usando replace)
       router.replace('/favorites' as never); 
     } else if (route === '/homeScreen') {
-       // Usa replace para navegação de tabs
-       router.replace('/homeScreen' as never);
+      router.replace('/homeScreen' as never);
     }
   };
 
   // Componente para renderizar cada card de pet
   const PetCard = ({ pet, index }: { pet: any; index: number }) => {
     const [isFavorite, setIsFavorite] = useState(false);
-    const firstImage = Array.isArray(pet.images) && pet.images.length > 0 
+    
+    // 🔧 GARANTIR QUE firstImage É STRING
+    const firstImage = Array.isArray(pet.images) && pet.images.length > 0 && typeof pet.images[0] === 'string'
       ? pet.images[0] 
-      : (pet.image || MOCK_USER_PROFILE.imageUri);
+      : (typeof pet.image === 'string' ? pet.image : MOCK_USER_PROFILE.imageUri);
     
     const toggleFavorite = (e: any) => {
-      e.stopPropagation(); // Impede que o clique no coração navegue para a tela do pet
+      e.stopPropagation();
       setIsFavorite(!isFavorite);
-      // Aqui você pode adicionar a lógica para salvar o favorito no banco de dados
-      // Por exemplo: saveFavorite(pet.id, !isFavorite);
     };
     
     return (
-      <TouchableOpacity style={styles.cardWrapper} onPress={() => router.push(`/pets/${pet.id}` as never)}>
+      <TouchableOpacity 
+        style={styles.cardWrapper} 
+        onPress={() => {
+          console.log('🔗 Abrindo pet:', pet.id);
+          router.push(`/pets/${pet.id}` as never);
+        }}
+      >
         <View style={styles.card}>
           <Image source={{ uri: firstImage }} style={styles.cardImage} />
           
-          {/* Botão de favorito */}
           <TouchableOpacity 
             style={styles.favoriteButton} 
             onPress={toggleFavorite}
@@ -409,7 +414,9 @@ const HomeScreen = () => {
           <View style={styles.cardContent}>
             <View style={styles.cardText}>
               <Text style={styles.cardName}>{pet.name || 'Sem nome'}</Text>
-              <Text numberOfLines={2} style={styles.cardDescription}>{pet.description || pet.details || ''}</Text>
+              <Text numberOfLines={2} style={styles.cardDescription}>
+                {pet.description || pet.details || ''}
+              </Text>
             </View>
             <View style={styles.cardAgeBadge}>
               <Text style={styles.cardAgeText}>{pet.age || ''}</Text>
@@ -420,14 +427,13 @@ const HomeScreen = () => {
     );
   };
 
-  // --- Componente TabItem (para a barra inferior) ---
+  // --- Componente TabItem ---
   const TabItem: React.FC<TabItemProps> = ({ name, label, route, isFocused }) => (
     <TouchableOpacity
       key={route}
       style={styles.tabItem}
       onPress={() => handleTabPress(route)}
-      // Desativa o toque se já estiver na tab atual
-      disabled={isFocused && route === currentRoute} 
+      disabled={isFocused} 
     >
       <Ionicons 
         name={isFocused ? name.replace('-outline', '') as "home" : name as "home-outline"} 
@@ -445,17 +451,19 @@ const HomeScreen = () => {
       <Stack.Screen options={{ headerShown: false, animation: 'none' as const }} />
       <StatusBar barStyle="dark-content" backgroundColor="#fff" /> 
 
-      {/* ------------------ 2. CABEÇALHO (FIXO) ------------------ */}
+      {/* --- CABEÇALHO --- */}
       <View style={styles.header}>
-          {/* Ícone/Foto do Usuário */}
-          <TouchableOpacity onPress={() => handleTabPress('/my-profile')} style={styles.profileButton} activeOpacity={0.7}>
-            <Image
-              source={{ uri: userProfile?.profileImage || MOCK_USER_PROFILE.imageUri }}
-              style={styles.profileImage}
-            />
-          </TouchableOpacity>
+        <TouchableOpacity 
+          onPress={() => handleTabPress('/my-profile')} 
+          style={styles.profileButton} 
+          activeOpacity={0.7}
+        >
+          <Image
+            source={{ uri: userProfile?.profileImage || MOCK_USER_PROFILE.imageUri }}
+            style={styles.profileImage}
+          />
+        </TouchableOpacity>
 
-        {/* Barra de Pesquisa (BOTÃO VISUAL PARA NAVEGAR) */}
         <TouchableOpacity 
           style={styles.searchButton} 
           onPress={() => handleTabPress('/searchScreen')} 
@@ -466,10 +474,9 @@ const HomeScreen = () => {
             Pesquisar por nome, raça ou localização...
           </Text>
         </TouchableOpacity>
-        
       </View>
 
-      {/* ------------------ 3. CONTEÚDO PRINCIPAL (SCROLLABLE - PLACEHOLDER) ------------------ */}
+      {/* --- CONTEÚDO PRINCIPAL --- */}
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -478,8 +485,6 @@ const HomeScreen = () => {
         }
       >
         <View style={[styles.mainContent, { marginTop: 15 }]}>
-          
-
           {isLoading ? (
             <View style={styles.placeholderCardContainer}>
               <Ionicons name="timer" size={36} color="#FFC837" style={{ marginBottom: 10 }} />
@@ -495,7 +500,7 @@ const HomeScreen = () => {
             <View style={styles.placeholderCardContainer}>
               <Ionicons name="paw" size={40} color="#FFC837" style={{ marginBottom: 10 }} />
               <Text style={styles.placeholderText}>
-                Você ainda não registrou nenhum pet!
+                Nenhum pet disponível!
               </Text>
               <Text style={styles.placeholderTextSmall}>
                 Toque no botão + para adicionar seu primeiro pet.
@@ -504,13 +509,11 @@ const HomeScreen = () => {
           )}
 
           <View style={{ height: 50 }} />
-          
         </View>
       </ScrollView>
 
-      {/* ------------------ 4. BARRA DE NAVEGAÇÃO INFERIOR (FIXA) ------------------ */}
+      {/* --- BARRA DE NAVEGAÇÃO --- */}
       <View style={styles.tabBarContainer}>
-        {/* Início (Focado) */}
         <TabItem 
           name="home-outline" 
           label="Início" 
@@ -518,15 +521,13 @@ const HomeScreen = () => {
           isFocused={currentRoute === '/homeScreen'} 
         />
         
-        {/* Pesquisar: Rota para SearchScreen */}
         <TabItem 
           name="search-outline" 
           label="Pesquisar" 
           route="/searchScreen" 
-          isFocused={currentRoute === '/searchScreen'} // Ajuste de isFocused
+          isFocused={currentRoute === '/searchScreen'}
         />
         
-        {/* Botão Central de Adicionar (LIGAÇÃO PARA /register-pet) */}
         <TouchableOpacity 
           style={styles.addButton} 
           onPress={() => handleTabPress('/register-pet')} 
@@ -534,7 +535,6 @@ const HomeScreen = () => {
           <Ionicons name="add" size={32} color="#333" />
         </TouchableOpacity>
 
-        {/* ✅ FAVORITOS (Usando currentRoute para isFocused) */}
         <TabItem 
           name="heart-outline" 
           label="Favoritos" 
@@ -542,7 +542,6 @@ const HomeScreen = () => {
           isFocused={currentRoute === '/favorites'} 
         />
         
-        {/* Perfil (Usando currentRoute para isFocused) */}
         <TabItem 
           name="person-outline" 
           label="Perfil" 
@@ -550,7 +549,6 @@ const HomeScreen = () => {
           isFocused={currentRoute === '/my-profile'} 
         />
       </View>
-      
     </SafeAreaView>
   );
 };

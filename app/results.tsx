@@ -13,7 +13,10 @@ import {
     Text,
     TouchableOpacity,
     View,
+    BackHandler,
 } from 'react-native';
+import { queryDocuments } from '../firebase';
+import { useFocusEffect } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width - 40;
@@ -34,7 +37,7 @@ interface Pet {
 
 const getPetTypeFromBreed = (breed?: string): 'cat' | 'dog' => {
   if (!breed) return 'dog';
-  const catBreeds = ['persa', 'siamês', 'siamês', 'angorá', 'sphynx'];
+  const catBreeds = ['persa', 'siamês', 'angorá', 'sphynx'];
   return catBreeds.some(catBreed => 
     breed.toLowerCase().includes(catBreed)
   ) ? 'cat' : 'dog';
@@ -49,34 +52,83 @@ const ResultsScreen = () => {
   const params = useLocalSearchParams();
   
   // Get search parameters
-  const searchQuery = params.searchQuery as string || 'Todos os Pets';
+  const searchQuery = (params.searchQuery as string) || 'Todos os Pets';
   const [isLoading, setIsLoading] = useState(true);
   const [pets, setPets] = useState<Pet[]>([]);
+  const [filteredPets, setFilteredPets] = useState<Pet[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  // Handle do botão de voltar do sistema
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        router.back();
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [])
+  );
 
   useEffect(() => {
     const loadResults = async () => {
       try {
-        // Check if we have results in the params
-        if (params.results) {
-          const results = JSON.parse(params.results as string);
-          setPets(results);
-        } else {
-          // If no results in params, try to fetch based on search query
-          // This is a fallback in case the results weren't passed correctly
-          // You might want to implement this part based on your app's needs
-          setError('Nenhum resultado encontrado para esta busca.');
+        setIsLoading(true);
+        
+        // Busca todos os pets do Firebase
+        const allPets = await queryDocuments('pets');
+        
+        console.log('All pets fetched:', allPets); // Debug
+        
+        if (!allPets || allPets.length === 0) {
+          setError('Nenhum pet encontrado.');
+          setPets([]);
+          setFilteredPets([]);
+          return;
         }
+
+        // Converte para o formato esperado
+        const petsData: Pet[] = allPets.map((pet: any) => ({
+          id: pet.id || '',
+          name: pet.name || 'Sem Nome',
+          description: pet.description || '',
+          imageUrl: pet.imageUrl || 'https://placehold.co/400x300/CCCCCC/999999?text=Sem+Imagem',
+          type: pet.type || getPetTypeFromBreed(pet.breed),
+          breed: pet.breed || '',
+          color: pet.color || '',
+          gender: pet.gender || '',
+          size: pet.size || '',
+          isVaccinated: pet.isVaccinated || false,
+          isNeutered: pet.isNeutered || false,
+        }));
+
+        setPets(petsData);
+
+        // Filtra pelos critérios de busca
+        const filtered = petsData.filter(pet => {
+          const query = searchQuery.toLowerCase();
+          return (
+            pet.name.toLowerCase().includes(query) ||
+            pet.breed.toLowerCase().includes(query) ||
+            pet.color.toLowerCase().includes(query) ||
+            pet.description.toLowerCase().includes(query)
+          );
+        });
+
+        setFilteredPets(filtered);
+        setError(null);
       } catch (err) {
         console.error('Error loading results:', err);
         setError('Ocorreu um erro ao carregar os resultados.');
+        setFilteredPets([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadResults();
-  }, [params]);
+  }, [searchQuery]);
 
   if (isLoading) {
     return (
@@ -87,18 +139,34 @@ const ResultsScreen = () => {
     );
   }
 
-  if (error) {
+  if (error || filteredPets.length === 0) {
     return (
-      <SafeAreaView style={[styles.safeArea, styles.errorContainer]}>
-        <Ionicons name="warning-outline" size={48} color="#FFC837" />
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={20} color="#333" />
-          <Text style={styles.backButtonText}>Voltar</Text>
-        </TouchableOpacity>
+      <SafeAreaView style={styles.safeArea}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButtonStyle}>
+            <Ionicons name="arrow-back" size={28} color="#333" />
+          </TouchableOpacity>
+
+          <View style={styles.titleContainer}>
+            <Text style={styles.titleText} numberOfLines={1}>
+              Resultados de Busca
+            </Text>
+            <Text style={styles.subtitleText} numberOfLines={1}>
+              {searchQuery}
+            </Text>
+          </View>
+        </View>
+
+        {/* Empty State */}
+        <View style={styles.emptyContainer}>
+          <Ionicons name="search-outline" size={48} color="#FFC837" />
+          <Text style={styles.emptyText}>Nenhum resultado encontrado</Text>
+          <Text style={styles.emptySubText}>Tente buscar por outro termo</Text>
+        </View>
       </SafeAreaView>
     );
   }
@@ -110,7 +178,7 @@ const ResultsScreen = () => {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButtonStyle}>
           <Ionicons name="arrow-back" size={28} color="#333" />
         </TouchableOpacity>
 
@@ -128,20 +196,22 @@ const ResultsScreen = () => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.mainContent}>
           <Text style={styles.sectionTitle}>
-            {pets.length > 0 
-              ? `Mostrando ${pets.length} resultado${pets.length !== 1 ? 's' : ''} para: "${searchQuery}"`
-              : `Nenhum resultado encontrado para: "${searchQuery}"`
+            {filteredPets.length > 0 
+              ? `${filteredPets.length} resultado${filteredPets.length !== 1 ? 's' : ''} encontrado${filteredPets.length !== 1 ? 's' : ''}`
+              : 'Nenhum resultado'
             }
           </Text>
 
-          {/* Display actual search results */}
-          {pets.map((pet) => (
-            <PetCardFullWidthPlaceholder 
+          {/* Display filtered search results */}
+          {filteredPets.map((pet) => (
+            <PetCardFullWidth 
               key={pet.id}
+              id={pet.id}
               name={pet.name}
-              description={pet.description || 'Sem descrição disponível'}
-              imageUri={pet.imageUrl || 'https://placehold.co/400x300/CCCCCC/999999?text=Sem+Imagem'}
-              type={pet.type || getPetTypeFromBreed(pet.breed)}
+              description={pet.description}
+              imageUri={pet.imageUrl}
+              type={pet.type || 'dog'}
+              onPress={() => router.push(`/pet-details/${pet.id}` as never)}
             />
           ))}
 
@@ -154,10 +224,11 @@ const ResultsScreen = () => {
 };
 
 // =========================================================================
-// 4. NOVO COMPONENTE DE CARD DE PET (FULL WIDTH - SIMILAR À HOME)
+// 2. COMPONENTE DE CARD DE PET (FULL WIDTH)
 // =========================================================================
 
 interface PetCardFullWidthProps {
+  id: string;
   name: string;
   description: string;
   imageUri: string;
@@ -165,43 +236,54 @@ interface PetCardFullWidthProps {
   onPress?: () => void;
 }
 
-const PetCardFullWidthPlaceholder: React.FC<PetCardFullWidthProps> = ({ 
+const PetCardFullWidth: React.FC<PetCardFullWidthProps> = ({ 
+  id,
   name, 
   description, 
   imageUri, 
   type,
   onPress 
-}: PetCardFullWidthProps) => (
-  <TouchableOpacity style={styles.fullWidthPetCard} activeOpacity={0.9} onPress={onPress}>
-    <Image source={{ uri: imageUri }} style={styles.fullWidthCardImage} />
-    
-    {/* Ícone de favorito no canto superior direito */}
-    <TouchableOpacity style={styles.fullWidthFavoriteButton}>
-      <Ionicons name="heart-outline" size={28} color="#FFF" />
-            <Ionicons name="heart-outline" size={28} color="#FFF" />
-        </TouchableOpacity>
+}: PetCardFullWidthProps) => {
+  const [isFavorite, setIsFavorite] = useState(false);
 
-        <View style={styles.fullWidthCardOverlay}>
-            <View style={styles.fullWidthProfileIconContainer}>
-                {/* Ícone do tipo de animal (Gato ou Cachorro) */}
-                <Ionicons 
-                    name={type === 'cat' ? 'cat' : 'dog'} 
-                    size={24} 
-                    color="#FFF" 
-                    style={styles.fullWidthPetTypeIcon} 
-                />
-            </View>
-            <View style={styles.fullWidthCardInfo}>
-                <Text style={styles.fullWidthCardName}>{name}</Text>
-                <Text style={styles.fullWidthCardDescription} numberOfLines={2}>{description}</Text>
-            </View>
+  return (
+    <TouchableOpacity style={styles.fullWidthPetCard} activeOpacity={0.9} onPress={onPress}>
+      <Image source={{ uri: imageUri }} style={styles.fullWidthCardImage} />
+      
+      {/* Ícone de favorito no canto superior direito */}
+      <TouchableOpacity 
+        style={styles.fullWidthFavoriteButton}
+        onPress={() => setIsFavorite(!isFavorite)}
+      >
+        <Ionicons 
+          name={isFavorite ? "heart" : "heart-outline"} 
+          size={28} 
+          color={isFavorite ? "#FF3B30" : "#FFF"} 
+        />
+      </TouchableOpacity>
+
+      <View style={styles.fullWidthCardOverlay}>
+        <View style={styles.fullWidthProfileIconContainer}>
+          {/* Ícone do tipo de animal (Gato ou Cachorro) */}
+          <Ionicons 
+            name={type === 'cat' ? 'cat' : 'dog'} 
+            size={24} 
+            color="#333" 
+          />
         </View>
+        <View style={styles.fullWidthCardInfo}>
+          <Text style={styles.fullWidthCardName}>{name}</Text>
+          <Text style={styles.fullWidthCardDescription} numberOfLines={2}>
+            {description || 'Sem descrição disponível'}
+          </Text>
+        </View>
+      </View>
     </TouchableOpacity>
-);
-
+  );
+};
 
 // =========================================================================
-// 5. ESTILIZAÇÃO
+// 3. ESTILIZAÇÃO
 // =========================================================================
 
 const styles = StyleSheet.create({
@@ -216,33 +298,29 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 16,
   },
-  errorContainer: {
+  emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
-  errorText: {
+  emptyText: {
     marginTop: 10,
-    color: '#FF3B30',
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 20,
-    alignSelf: 'center',
-  },
-  backButtonText: {
-    marginLeft: 5,
+    fontSize: 18,
+    fontWeight: '600',
     color: '#333',
-    fontWeight: '500',
+    textAlign: 'center',
   },
-  safeArea: { flex: 1, backgroundColor: '#fff' },
+  emptySubText: {
+    marginTop: 5,
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+  },
+  safeArea: { 
+    flex: 1, 
+    backgroundColor: '#fff' 
+  },
 
   // --- HEADER ---
   header: {
@@ -255,19 +333,9 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F0F0F0',
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 10,
   },
-  backButton: {
+  backButtonStyle: {
     marginRight: 10,
     padding: 5,
-  },
-  profileContainer: {
-    marginRight: 10,
-  },
-  profileImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: '#CCC', // Pode ser alterado para uma cor mais neutra
   },
   titleContainer: {
     flex: 1,
@@ -290,7 +358,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   mainContent: {
-    paddingHorizontal: 20, // Mantém o padding da Home
+    paddingHorizontal: 20,
   },
   sectionTitle: {
     fontSize: 20, 
@@ -300,15 +368,15 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
 
-  // --- NOVO ESTILO DE CARD FULL WIDTH ---
+  // --- ESTILO DE CARD FULL WIDTH ---
   fullWidthPetCard: {
-    width: CARD_WIDTH, // Largura total com base no padding
-    height: CARD_WIDTH * 1.1, // Um pouco mais alto que largo
+    width: CARD_WIDTH,
+    height: CARD_WIDTH * 1.1,
     borderRadius: 20,
     overflow: 'hidden',
     marginBottom: 20,
     backgroundColor: '#f8f8f8',
-    alignSelf: 'center', // Centraliza o card
+    alignSelf: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -324,7 +392,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 15,
     right: 15,
-    backgroundColor: 'rgba(0,0,0,0.3)', // Fundo semi-transparente para o ícone
+    backgroundColor: 'rgba(0,0,0,0.3)',
     borderRadius: 20,
     padding: 5,
   },
@@ -333,34 +401,30 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(255,255,255,0.9)', // Fundo branco semi-transparente
+    backgroundColor: 'rgba(255,255,255,0.9)',
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    minHeight: 120, // Altura mínima para as informações
-    flexDirection: 'row', // Para alinhar ícone e texto
+    minHeight: 120,
+    flexDirection: 'row',
     alignItems: 'center',
   },
   fullWidthProfileIconContainer: {
-    backgroundColor: '#FFC837', // Fundo amarelo para o ícone do pet
+    backgroundColor: '#FFC837',
     borderRadius: 25,
     width: 50,
     height: 50,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
-    borderWidth: 2, // Borda como na imagem
+    borderWidth: 2,
     borderColor: '#FFF',
-    // Sombra para destacar o ícone
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
     elevation: 4,
-  },
-  fullWidthPetTypeIcon: {
-    // A cor já está definida no componente Ionicons
   },
   fullWidthCardInfo: {
     flex: 1,

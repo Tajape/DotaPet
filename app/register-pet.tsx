@@ -79,7 +79,8 @@ const RegisterPetScreen = () => {
     
     // --- Função de Submissão com Firebase ---
     const handleSubmit = async () => {
-        if (!name || !ageNumber || !breed || !gender || !size || isVaccinated === null || isNeutered === null || selectedImages.length === 0) {
+        // 🔧 CORREÇÃO: Validação melhorada
+        if (!name.trim() || !ageNumber.trim() || !breed.trim() || !gender || !size || isVaccinated === null || isNeutered === null || selectedImages.length === 0) {
             Alert.alert('Campos Obrigatórios', 'Por favor, preencha todos os campos obrigatórios e adicione pelo menos uma foto.');
             return;
         }
@@ -89,17 +90,21 @@ const RegisterPetScreen = () => {
             const user = getCurrentUser();
             if (!user) {
                 Alert.alert('Erro', 'Usuário não autenticado.');
+                setIsLoading(false);
                 return;
             }
 
-            const age = `${ageNumber} ${ageUnit}`;
+            // 🔧 CORREÇÃO: Concatenar idade corretamente
+            const age = `${ageNumber} ${ageUnit === 'anos' ? 'ano(s)' : 'mês(es)'}`;
             
-            await addDocument('pets', {
-                name,
+            console.log('📝 Cadastrando pet:', { name, age, breed, gender, size });
+
+            const petData = {
+                name: name.trim(),
                 age,
-                color,
-                breed,
-                description,
+                color: color.trim() || 'Não informado',
+                breed: breed.trim(),
+                description: description.trim() || 'Sem descrição',
                 gender,
                 size,
                 isVaccinated,
@@ -107,14 +112,18 @@ const RegisterPetScreen = () => {
                 images: selectedImages,
                 ownerId: user.uid,
                 createdAt: new Date(),
-            });
+            };
 
+            await addDocument('pets', petData);
+
+            console.log('✅ Pet cadastrado com sucesso!');
             Alert.alert('Sucesso!', `${name} cadastrado com sucesso!`);
-            // Pequeno delay para garantir que o pet foi salvo
+            
             setTimeout(() => {
                 router.replace('/homeScreen' as never);
             }, 500);
         } catch (error: any) {
+            console.error('❌ Erro ao cadastrar pet:', error);
             Alert.alert('Erro', error.message || 'Falha ao cadastrar pet.');
         } finally {
             setIsLoading(false);
@@ -340,7 +349,7 @@ const RegisterPetScreen = () => {
                         {selectedImages.length} de {MAX_IMAGES} fotos adicionadas
                     </Text>
 
-                    {/* --- INPUTS DE TEXTO --- */}
+                    {/* --- INPUTS DE TEXTO --- */>
                     
                     <Text style={styles.inputLabel}>Nome</Text>
                     <TextInput

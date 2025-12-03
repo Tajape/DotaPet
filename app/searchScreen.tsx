@@ -14,41 +14,41 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
-import { queryDocuments } from '../firebase';
+import { queryDocuments } from "../firebase";
 
 // Styles
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
-  
+
   // Header
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    backgroundColor: '#fff',
+    borderBottomColor: "#e0e0e0",
+    backgroundColor: "#fff",
   },
   backButton: {
     padding: 5,
     marginRight: 10,
   },
-  
+
   // Search
   searchContainer: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
     borderRadius: 10,
     paddingHorizontal: 15,
     height: 50,
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: "#333",
     padding: 0,
     marginLeft: 10,
   },
@@ -64,138 +64,138 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   searchInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
     borderRadius: 10,
     paddingHorizontal: 15,
     height: 50,
     marginBottom: 10,
   },
-  
+
   // Filters
   filterContainer: {
     paddingHorizontal: 15,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
   filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: "#f0f0f0",
     borderRadius: 20,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   filterButtonText: {
     marginLeft: 5,
-    color: '#333',
-    fontWeight: '500',
+    color: "#333",
+    fontWeight: "500",
   },
   filtersPanel: {
     padding: 15,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
   filterSection: {
     marginBottom: 20,
   },
   filterLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 10,
-    color: '#333',
+    color: "#333",
   },
   filterOptions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginHorizontal: -5,
   },
   filterOption: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 15,
     margin: 5,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: "#e0e0e0",
   },
   filterOptionSelected: {
-    backgroundColor: '#4a90e2',
-    borderColor: '#4a90e2',
+    backgroundColor: "#4a90e2",
+    borderColor: "#4a90e2",
   },
   filterOptionText: {
-    color: '#333',
+    color: "#333",
   },
   filterOptionTextSelected: {
-    color: '#fff',
-    fontWeight: '600',
+    color: "#fff",
+    fontWeight: "600",
   },
   filterActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 15,
   },
   filterActionButton: {
     flex: 1,
     padding: 12,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
     marginHorizontal: 5,
   },
   clearFilterButton: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
   },
   clearFilterButtonText: {
-    color: '#FF3B30',
-    fontWeight: '600',
+    color: "#FF3B30",
+    fontWeight: "600",
   },
   applyFilterButton: {
-    backgroundColor: '#4a90e2',
+    backgroundColor: "#4a90e2",
   },
   applyFilterButtonText: {
-    color: '#fff',
-    fontWeight: '600',
+    color: "#fff",
+    fontWeight: "600",
   },
-  
+
   // History
   historyContainer: {
     flex: 1,
     padding: 15,
   },
   historyHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 15,
   },
   historyTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
   },
   clearButton: {
     padding: 5,
   },
   clearButtonText: {
-    color: '#4a90e2',
+    color: "#4a90e2",
     fontSize: 14,
   },
   clearHistoryButtonText: {
-    color: '#FF3B30',
+    color: "#FF3B30",
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   historyItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#f5f5f5',
+    borderBottomColor: "#f5f5f5",
   },
   historyIcon: {
     marginRight: 10,
@@ -207,60 +207,60 @@ const styles = StyleSheet.create({
   historyText: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: "#333",
   },
-  
+
   // Empty/Loading States
   emptyHistory: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   emptyState: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   emptyText: {
     fontSize: 16,
-    color: '#999',
-    textAlign: 'center',
+    color: "#999",
+    textAlign: "center",
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 10,
-    color: '#888',
+    color: "#888",
   },
-  
+
   // Breed and Color Filters
   breedList: {
     maxHeight: 200,
     marginTop: 10,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: "#f0f0f0",
     borderRadius: 8,
   },
   breedItem: {
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f5f5f5',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    borderBottomColor: "#f5f5f5",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   breedText: {
     fontSize: 16,
-    color: '#333',
+    color: "#333",
   },
   colorOptions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginHorizontal: -5,
   },
   colorOption: {
@@ -269,10 +269,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     margin: 5,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: "transparent",
   },
   colorOptionSelected: {
-    borderColor: '#4a90e2',
+    borderColor: "#4a90e2",
   },
 });
 
@@ -291,8 +291,8 @@ const SearchScreen = () => {
 
   // Estados para filtros
   interface PetFilters {
-    gender: 'Macho' | 'Fêmea' | null;
-    size: 'pequeno' | 'médio' | 'grande' | null;
+    gender: "Macho" | "Fêmea" | null;
+    size: "pequeno" | "médio" | "grande" | null;
     isVaccinated: boolean | null;
     isNeutered: boolean | null;
     breed: string;
@@ -304,8 +304,8 @@ const SearchScreen = () => {
     size: null,
     isVaccinated: null,
     isNeutered: null,
-    breed: '',
-    color: '',
+    breed: "",
+    color: "",
   });
 
   const [availableBreeds, setAvailableBreeds] = useState<string[]>([]);
@@ -317,14 +317,18 @@ const SearchScreen = () => {
   const loadFilterOptions = useCallback(async () => {
     try {
       setIsLoadingFilters(true);
-      const pets = await queryDocuments('pets', []);
-      const breeds = [...new Set(pets.map((pet: any) => pet.breed).filter(Boolean))] as string[];
-      const colors = [...new Set(pets.map((pet: any) => pet.color).filter(Boolean))] as string[];
-      
+      const pets = await queryDocuments("pets", []);
+      const breeds = [
+        ...new Set(pets.map((pet: any) => pet.breed).filter(Boolean)),
+      ] as string[];
+      const colors = [
+        ...new Set(pets.map((pet: any) => pet.color).filter(Boolean)),
+      ] as string[];
+
       setAvailableBreeds(breeds);
       setAvailableColors(colors);
     } catch (error) {
-      console.error('Erro ao carregar opções de filtro:', error);
+      console.error("Erro ao carregar opções de filtro:", error);
     } finally {
       setIsLoadingFilters(false);
     }
@@ -346,7 +350,10 @@ const SearchScreen = () => {
 
   const saveHistoryToStorage = useCallback(async (historyToSave: string[]) => {
     try {
-      await AsyncStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(historyToSave));
+      await AsyncStorage.setItem(
+        SEARCH_HISTORY_KEY,
+        JSON.stringify(historyToSave)
+      );
     } catch (e) {
       console.error("Erro ao salvar histórico: ", e);
     }
@@ -359,14 +366,17 @@ const SearchScreen = () => {
     }
   }, [history, saveHistoryToStorage]);
 
-  const saveHistory = useCallback(async (updatedHistory: string[]) => {
-    try {
-      await saveHistoryToStorage(updatedHistory);
-      setHistory(updatedHistory);
-    } catch (e) {
-      console.error("Erro ao salvar histórico: ", e);
-    }
-  }, [saveHistoryToStorage, setHistory]);
+  const saveHistory = useCallback(
+    async (updatedHistory: string[]) => {
+      try {
+        await saveHistoryToStorage(updatedHistory);
+        setHistory(updatedHistory);
+      } catch (e) {
+        console.error("Erro ao salvar histórico: ", e);
+      }
+    },
+    [saveHistoryToStorage, setHistory]
+  );
 
   useEffect(() => {
     loadHistory();
@@ -378,15 +388,19 @@ const SearchScreen = () => {
   const addSearchToHistory = useCallback((query: string) => {
     if (!query.trim()) return;
     const cleanQuery = query.trim();
-    setHistory(prevHistory => {
-      const updatedHistory = [...prevHistory.filter(item => item !== cleanQuery)];
+    setHistory((prevHistory) => {
+      const updatedHistory = [
+        ...prevHistory.filter((item) => item !== cleanQuery),
+      ];
       updatedHistory.unshift(cleanQuery);
       return updatedHistory.slice(0, 5);
     });
   }, []);
 
   const removeSearchFromHistory = useCallback((itemToRemove: string) => {
-    setHistory(prevHistory => prevHistory.filter(item => item !== itemToRemove));
+    setHistory((prevHistory) =>
+      prevHistory.filter((item) => item !== itemToRemove)
+    );
   }, []);
 
   const clearAllHistory = useCallback(() => {
@@ -404,7 +418,17 @@ const SearchScreen = () => {
     );
   }, [saveHistory]);
 
-  type QueryOperator = '<' | '<=' | '==' | '!=' | '>=' | '>' | 'array-contains' | 'in' | 'array-contains-any' | 'not-in';
+  type QueryOperator =
+    | "<"
+    | "<="
+    | "=="
+    | "!="
+    | ">="
+    | ">"
+    | "array-contains"
+    | "in"
+    | "array-contains-any"
+    | "not-in";
   type QueryCondition = {
     field: string;
     operator: QueryOperator;
@@ -415,59 +439,32 @@ const SearchScreen = () => {
     if (!searchQuery.trim()) return;
 
     try {
-      // Get all pets first
-      const allPets = await queryDocuments('pets', []);
-      
-      // Filter pets based on search query and filters
-      const filteredPets = allPets.filter(pet => {
-        // Prepare searchable text from pet data
-        const searchableText = [
-          pet.name?.toLowerCase() || '',
-          pet.description?.toLowerCase() || '',
-          pet.breed?.toLowerCase() || '',
-          pet.color?.toLowerCase() || ''
-        ].join(' ');
-        
-        // Split search query into terms and check if all terms exist in searchable text
-        const searchTerms = searchQuery.toLowerCase().split(/\s+/).filter(term => term.length > 0);
-        const matchesSearch = searchTerms.every(term => searchableText.includes(term));
-        
-        // Check filters
-        const matchesGender = !filters.gender || pet.gender === filters.gender;
-        const matchesSize = !filters.size || pet.size === filters.size;
-        const matchesVaccinated = filters.isVaccinated === null || pet.isVaccinated === filters.isVaccinated;
-        const matchesNeutered = filters.isNeutered === null || pet.isNeutered === filters.isNeutered;
-        const matchesBreed = !filters.breed || pet.breed === filters.breed;
-        const matchesColor = !filters.color || pet.color === filters.color;
-        
-        return matchesSearch && matchesGender && matchesSize && 
-               matchesVaccinated && matchesNeutered && 
-               matchesBreed && matchesColor;
-      });
-      
-      // Add search to history
+      // Navega para a tela de resultados passando apenas a query e filtros
+      // A tela de resultados vai buscar os dados do Firebase por conta própria
       addSearchToHistory(searchQuery);
 
-      // Navigate to results screen with filtered data
       router.push({
-        pathname: '/results',
-        params: { 
+        pathname: "/results",
+        params: {
           searchQuery: searchQuery,
           filters: JSON.stringify(filters),
-          results: JSON.stringify(results)
+          // ⭐ REMOVIDO: results (não é necessário)
         },
       });
     } catch (error) {
-      console.error('Erro na busca:', error);
-      Alert.alert('Erro', 'Não foi possível realizar a busca. Tente novamente.');
+      console.error("Erro na busca:", error);
+      Alert.alert(
+        "Erro",
+        "Não foi possível realizar a busca. Tente novamente."
+      );
     }
   };
 
   const handleSearchSubmit = () => {
     if (searchQuery.trim()) {
-      handleSearchWithFilters().catch(error => {
-        console.error('Search error:', error);
-        Alert.alert('Erro', 'Ocorreu um erro ao realizar a busca.');
+      handleSearchWithFilters().catch((error) => {
+        console.error("Search error:", error);
+        Alert.alert("Erro", "Ocorreu um erro ao realizar a busca.");
       });
     }
   };
@@ -475,10 +472,10 @@ const SearchScreen = () => {
   const handleHistoryItemPress = (item: string) => {
     addSearchToHistory(item);
     router.push({
-      pathname: '/results',
-      params: { 
+      pathname: "/results",
+      params: {
         searchQuery: item,
-        filters: JSON.stringify(filters)
+        filters: JSON.stringify(filters),
       },
     });
     setSearchQuery("");
@@ -569,18 +566,23 @@ const SearchScreen = () => {
 
       {/* ------------------ BOTÃO DE FILTROS ------------------ */}
       <View style={styles.filterContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.filterButton}
           onPress={() => setShowFilters(!showFilters)}
           disabled={isLoadingFilters}
         >
-          <Ionicons 
-            name="filter" 
-            size={20} 
-            color={showFilters ? '#FFC837' : '#333'} 
+          <Ionicons
+            name="filter"
+            size={20}
+            color={showFilters ? "#FFC837" : "#333"}
           />
-          <Text style={[styles.filterButtonText, showFilters && { color: '#FFC837' }]}>
-            Filtros {isLoadingFilters ? '...' : ''}
+          <Text
+            style={[
+              styles.filterButtonText,
+              showFilters && { color: "#FFC837" },
+            ]}
+          >
+            Filtros {isLoadingFilters ? "..." : ""}
           </Text>
         </TouchableOpacity>
       </View>
@@ -596,19 +598,31 @@ const SearchScreen = () => {
               <View style={styles.filterSection}>
                 <Text style={styles.filterLabel}>Gênero</Text>
                 <View style={styles.filterOptions}>
-                  {['Macho', 'Fêmea'].map((gender) => (
+                  {["Macho", "Fêmea"].map((gender) => (
                     <TouchableOpacity
                       key={gender}
                       style={[
                         styles.filterOption,
-                        filters.gender === gender && styles.filterOptionSelected
+                        filters.gender === gender &&
+                          styles.filterOptionSelected,
                       ]}
-                      onPress={() => setFilters(prev => ({
-                        ...prev,
-                        gender: prev.gender === gender ? null : gender as 'Macho' | 'Fêmea'
-                      }))}
+                      onPress={() =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          gender:
+                            prev.gender === gender
+                              ? null
+                              : (gender as "Macho" | "Fêmea"),
+                        }))
+                      }
                     >
-                      <Text style={filters.gender === gender ? styles.filterOptionTextSelected : styles.filterOptionText}>
+                      <Text
+                        style={
+                          filters.gender === gender
+                            ? styles.filterOptionTextSelected
+                            : styles.filterOptionText
+                        }
+                      >
                         {gender}
                       </Text>
                     </TouchableOpacity>
@@ -620,19 +634,30 @@ const SearchScreen = () => {
               <View style={styles.filterSection}>
                 <Text style={styles.filterLabel}>Porte</Text>
                 <View style={styles.filterOptions}>
-                  {['pequeno', 'médio', 'grande'].map((size) => (
+                  {["pequeno", "médio", "grande"].map((size) => (
                     <TouchableOpacity
                       key={size}
                       style={[
                         styles.filterOption,
-                        filters.size === size && styles.filterOptionSelected
+                        filters.size === size && styles.filterOptionSelected,
                       ]}
-                      onPress={() => setFilters(prev => ({
-                        ...prev,
-                        size: prev.size === size ? null : size as 'pequeno' | 'médio' | 'grande'
-                      }))}
+                      onPress={() =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          size:
+                            prev.size === size
+                              ? null
+                              : (size as "pequeno" | "médio" | "grande"),
+                        }))
+                      }
                     >
-                      <Text style={filters.size === size ? styles.filterOptionTextSelected : styles.filterOptionText}>
+                      <Text
+                        style={
+                          filters.size === size
+                            ? styles.filterOptionTextSelected
+                            : styles.filterOptionText
+                        }
+                      >
                         {size}
                       </Text>
                     </TouchableOpacity>
@@ -649,15 +674,25 @@ const SearchScreen = () => {
                       key={String(value)}
                       style={[
                         styles.filterOption,
-                        filters.isVaccinated === value && styles.filterOptionSelected
+                        filters.isVaccinated === value &&
+                          styles.filterOptionSelected,
                       ]}
-                      onPress={() => setFilters(prev => ({
-                        ...prev,
-                        isVaccinated: prev.isVaccinated === value ? null : value
-                      }))}
+                      onPress={() =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          isVaccinated:
+                            prev.isVaccinated === value ? null : value,
+                        }))
+                      }
                     >
-                      <Text style={filters.isVaccinated === value ? styles.filterOptionTextSelected : styles.filterOptionText}>
-                        {value ? 'Sim' : 'Não'}
+                      <Text
+                        style={
+                          filters.isVaccinated === value
+                            ? styles.filterOptionTextSelected
+                            : styles.filterOptionText
+                        }
+                      >
+                        {value ? "Sim" : "Não"}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -673,15 +708,24 @@ const SearchScreen = () => {
                       key={String(value)}
                       style={[
                         styles.filterOption,
-                        filters.isNeutered === value && styles.filterOptionSelected
+                        filters.isNeutered === value &&
+                          styles.filterOptionSelected,
                       ]}
-                      onPress={() => setFilters(prev => ({
-                        ...prev,
-                        isNeutered: prev.isNeutered === value ? null : value
-                      }))}
+                      onPress={() =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          isNeutered: prev.isNeutered === value ? null : value,
+                        }))
+                      }
                     >
-                      <Text style={filters.isNeutered === value ? styles.filterOptionTextSelected : styles.filterOptionText}>
-                        {value ? 'Sim' : 'Não'}
+                      <Text
+                        style={
+                          filters.isNeutered === value
+                            ? styles.filterOptionTextSelected
+                            : styles.filterOptionText
+                        }
+                      >
+                        {value ? "Sim" : "Não"}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -693,29 +737,44 @@ const SearchScreen = () => {
                 <View style={styles.filterSection}>
                   <Text style={styles.filterLabel}>Raça</Text>
                   <View style={styles.searchInputContainer}>
-                    <Ionicons name="search" size={18} color="#888" style={styles.searchIcon} />
+                    <Ionicons
+                      name="search"
+                      size={18}
+                      color="#888"
+                      style={styles.searchIcon}
+                    />
                     <TextInput
                       style={styles.searchInput}
                       placeholder="Buscar raça..."
                       placeholderTextColor="#888"
                       value={filters.breed}
-                      onChangeText={(text) => setFilters(prev => ({ ...prev, breed: text }))}
+                      onChangeText={(text) =>
+                        setFilters((prev) => ({ ...prev, breed: text }))
+                      }
                     />
                   </View>
                   <ScrollView style={styles.breedList}>
                     {availableBreeds
-                      .filter(breed => 
-                        breed.toLowerCase().includes(filters.breed.toLowerCase())
+                      .filter((breed) =>
+                        breed
+                          .toLowerCase()
+                          .includes(filters.breed.toLowerCase())
                       )
                       .map((breed) => (
                         <TouchableOpacity
                           key={breed}
                           style={styles.breedItem}
-                          onPress={() => setFilters(prev => ({ ...prev, breed }))}
+                          onPress={() =>
+                            setFilters((prev) => ({ ...prev, breed }))
+                          }
                         >
                           <Text style={styles.breedText}>{breed}</Text>
                           {filters.breed === breed && (
-                            <Ionicons name="checkmark" size={20} color="#FFC837" />
+                            <Ionicons
+                              name="checkmark"
+                              size={20}
+                              color="#FFC837"
+                            />
                           )}
                         </TouchableOpacity>
                       ))}
@@ -734,12 +793,14 @@ const SearchScreen = () => {
                         style={[
                           styles.colorOption,
                           { backgroundColor: color.toLowerCase() },
-                          filters.color === color && styles.colorOptionSelected
+                          filters.color === color && styles.colorOptionSelected,
                         ]}
-                        onPress={() => setFilters(prev => ({
-                          ...prev,
-                          color: prev.color === color ? '' : color
-                        }))}
+                        onPress={() =>
+                          setFilters((prev) => ({
+                            ...prev,
+                            color: prev.color === color ? "" : color,
+                          }))
+                        }
                       />
                     ))}
                   </View>
@@ -750,16 +811,20 @@ const SearchScreen = () => {
               <View style={styles.filterActions}>
                 <TouchableOpacity
                   style={[styles.filterActionButton, styles.clearFilterButton]}
-                  onPress={() => setFilters({
-                    gender: null,
-                    size: null,
-                    isVaccinated: null,
-                    isNeutered: null,
-                    breed: '',
-                    color: '',
-                  })}
+                  onPress={() =>
+                    setFilters({
+                      gender: null,
+                      size: null,
+                      isVaccinated: null,
+                      isNeutered: null,
+                      breed: "",
+                      color: "",
+                    })
+                  }
                 >
-                  <Text style={styles.clearFilterButtonText}>Limpar Filtros</Text>
+                  <Text style={styles.clearFilterButtonText}>
+                    Limpar Filtros
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.filterActionButton, styles.applyFilterButton]}
@@ -768,7 +833,9 @@ const SearchScreen = () => {
                     handleSearchWithFilters();
                   }}
                 >
-                  <Text style={styles.applyFilterButtonText}>Aplicar Filtros</Text>
+                  <Text style={styles.applyFilterButtonText}>
+                    Aplicar Filtros
+                  </Text>
                 </TouchableOpacity>
               </View>
             </>
@@ -803,7 +870,6 @@ const SearchScreen = () => {
       )}
     </SafeAreaView>
   );
-
 };
 
 export default SearchScreen;
