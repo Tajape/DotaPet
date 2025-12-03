@@ -148,7 +148,7 @@ const MyProfileScreen = () => {
   };
 
   const handleApplicationsPress = () => {
-    console.log("Navegar para Minhas Candidaturas");
+    router.push("/my-applications" as never);
   };
 
   const handleEditProfilePress = () => {
