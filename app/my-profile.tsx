@@ -2,17 +2,17 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
-    Alert,
-    BackHandler,
-    Image,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  BackHandler,
+  Image,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { getDocument } from "../firebase";
 import { getCurrentUser } from "../services/authService";
@@ -115,13 +115,13 @@ const MyProfileScreen = () => {
         try {
           const user = getCurrentUser();
           if (user) {
-            const profileData = await getDocument('users', user.uid);
+            const profileData = await getDocument("users", user.uid);
             if (profileData) {
               setUserProfile(profileData as UserProfile);
             }
           }
         } catch (error) {
-          console.error('Erro ao carregar perfil:', error);
+          console.error("Erro ao carregar perfil:", error);
         }
       };
 
@@ -154,7 +154,7 @@ const MyProfileScreen = () => {
   const handleEditProfilePress = () => {
     router.push("/user-profile" as never);
   };
-  
+
   // ⭐ LÓGICA DO BOTÃO SAIR COM CONFIRMAÇÃO (ROTA CORRIGIDA)
   const handleLogout = () => {
     Alert.alert(
@@ -171,7 +171,7 @@ const MyProfileScreen = () => {
           text: "Sim, Sair",
           onPress: () => {
             // ROTA CORRIGIDA PARA "/welcome"
-            router.replace("/welcome" as never); 
+            router.replace("/welcome" as never);
           },
           style: "destructive",
         },
@@ -179,7 +179,6 @@ const MyProfileScreen = () => {
       { cancelable: true }
     );
   };
-
 
   const handleTabPress = (route: string) => {
     if (route === currentRoute) {
@@ -220,12 +219,18 @@ const MyProfileScreen = () => {
         {/* Informações do Usuário */}
         <View style={styles.userInfoContainer}>
           <Image
-            source={{ uri: userProfile?.profileImage || MOCK_USER_PROFILE.imageUri }}
+            source={{
+              uri: userProfile?.profileImage || MOCK_USER_PROFILE.imageUri,
+            }}
             style={styles.profileImage}
           />
-          <Text style={styles.usernameText}>{userProfile?.username || MOCK_USER_PROFILE.username}</Text>
+          <Text style={styles.usernameText}>
+            {userProfile?.username || MOCK_USER_PROFILE.username}
+          </Text>
           <Text style={styles.locationText}>
-            {userProfile ? `${userProfile.city}, ${userProfile.state}` : MOCK_USER_PROFILE.location}
+            {userProfile
+              ? `${userProfile.city}, ${userProfile.state}`
+              : MOCK_USER_PROFILE.location}
           </Text>
         </View>
 

@@ -2,6 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   BackHandler,
   FlatList,
@@ -13,7 +14,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  ActivityIndicator,
 } from "react-native";
 import { deleteDocument, queryDocuments } from "../firebase";
 import { getCurrentUser } from "../services/authService";
@@ -167,7 +167,11 @@ const MyApplicationsScreen = () => {
           setIsLoading(true);
           if (currentUser?.uid) {
             // Buscar todos os pets do usuário
-            const userPets = await queryDocuments("pets", "ownerId", currentUser.uid);
+            const userPets = await queryDocuments(
+              "pets",
+              "ownerId",
+              currentUser.uid
+            );
             setPets(userPets as Pet[]);
           }
         } catch (error) {
@@ -205,30 +209,26 @@ const MyApplicationsScreen = () => {
 
   // Função para deletar pet
   const handleDeletePet = (petId: string, petName: string) => {
-    Alert.alert(
-      "Deletar Pet",
-      `Tem certeza que deseja deletar ${petName}?`,
-      [
-        {
-          text: "Cancelar",
-          style: "cancel",
+    Alert.alert("Deletar Pet", `Tem certeza que deseja deletar ${petName}?`, [
+      {
+        text: "Cancelar",
+        style: "cancel",
+      },
+      {
+        text: "Deletar",
+        onPress: async () => {
+          try {
+            await deleteDocument("pets", petId);
+            setPets(pets.filter((p) => p.id !== petId));
+            Alert.alert("Sucesso", "Pet deletado com sucesso!");
+          } catch (error) {
+            console.error("Erro ao deletar pet:", error);
+            Alert.alert("Erro", "Não foi possível deletar o pet");
+          }
         },
-        {
-          text: "Deletar",
-          onPress: async () => {
-            try {
-              await deleteDocument("pets", petId);
-              setPets(pets.filter((p) => p.id !== petId));
-              Alert.alert("Sucesso", "Pet deletado com sucesso!");
-            } catch (error) {
-              console.error("Erro ao deletar pet:", error);
-              Alert.alert("Erro", "Não foi possível deletar o pet");
-            }
-          },
-          style: "destructive",
-        },
-      ]
-    );
+        style: "destructive",
+      },
+    ]);
   };
 
   const handleGoBack = () => {
