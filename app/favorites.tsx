@@ -1,18 +1,22 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-    BackHandler,
-    Platform,
-    RefreshControl,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  BackHandler,
+  Image,
+  Platform,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View
 } from "react-native";
+import { getFavoritePets } from "../services/favoritesService";
 
 // =========================================================================
 // Componente auxiliar para a Tab Bar
@@ -32,48 +36,106 @@ const TabItem: React.FC<TabItemProps> = ({
   route,
   isFocused,
   onPress,
-}) => (
-  <TouchableOpacity
-    key={route}
-    style={styles.tabItem}
-    onPress={() => onPress(route)}
-  >
-    <Ionicons
-      name={
-        isFocused
-          ? (name.replace("-outline", "") as "heart")
-          : (name as "heart-outline")
-      }
-      size={24}
-      color={isFocused ? "#333" : "#666"}
-    />
-    <Text style={[styles.tabLabel, isFocused && styles.tabLabelFocused]}>
-      {label}
-    </Text>
-  </TouchableOpacity>
-);
+}) => {
+  const styles = StyleSheet.create({
+    tabItem: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 5,
+    },
+    tabLabel: {
+      fontSize: 11,
+      fontWeight: "500",
+      color: "#666",
+      marginTop: 2,
+    },
+    tabLabelFocused: {
+      color: "#333",
+      fontWeight: "700",
+    },
+  });
+  
+  return (
+    <TouchableOpacity
+      key={route}
+      style={styles.tabItem}
+      onPress={() => onPress(route)}
+    >
+      <Ionicons
+        name={
+          isFocused
+            ? (name.replace("-outline", "") as "heart")
+            : (name as "heart-outline")
+        }
+        size={24}
+        color={isFocused ? "#333" : "#666"}
+      />
+      <Text style={[styles.tabLabel, isFocused && styles.tabLabelFocused]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+};
 
 // =========================================================================
 // COMPONENTE PRINCIPAL (FavoritesScreen)
 // =========================================================================
 
+interface Pet {
+  id: string;
+  name?: string;
+  description?: string;
+  images?: string[];
+  type?: 'cat' | 'dog';
+  breed?: string;
+}
+
+const useResponsiveSize = () => {
+  const { width } = useWindowDimensions();
+  
+  return (size: number) => {
+    const scale = Math.min(width, 600) / 375; // 375 é a largura base (iPhone 6/7/8)
+    return Math.round(size * scale);
+  };
+};
+
 const FavoritesScreen = () => {
   const router = useRouter();
-  const currentRoute: string = "/favorites"; // Current screen
+  const { width } = useWindowDimensions();
+  const responsiveSize = useResponsiveSize();
+  const isLargeScreen = width > 600;
+  const currentRoute: string = "/favorites";
   const [refreshing, setRefreshing] = useState(false);
+  const [favoritePets, setFavoritePets] = useState<Pet[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadFavorites = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const pets = await getFavoritePets();
+      setFavoritePets(pets);
+    } catch (error) {
+      console.error('Erro ao carregar favoritos:', error);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    // Aqui você pode adicionar lógica para recarregar dados de favoritos
-    // Por enquanto, apenas simula um delay de carregamento
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setRefreshing(false);
+    await loadFavorites();
   };
 
-  const handleGoBack = () => {
+  useEffect(() => {
+    loadFavorites();
+  }, [loadFavorites]);
+
+  const handleGoBack = useCallback(() => {
     // Garante que o usuário volte para a Home
     router.replace("/homeScreen" as never);
-  };
+  }, [router]);
 
   // ⭐ NOVO: Handle do botão de voltar do sistema
   useFocusEffect(
@@ -89,7 +151,7 @@ const FavoritesScreen = () => {
       );
 
       return () => subscription.remove();
-    }, [])
+    }, [handleGoBack]) // Adicionado handleGoBack ao array de dependências
   );
 
   const handleTabPress = (route: string) => {
@@ -109,18 +171,46 @@ const FavoritesScreen = () => {
     animation: "none" as const,
   };
 
-  // ✅ ESTADO VAZIO COM ELEMENTOS REORDENADOS
+  const renderPetCard = (pet: Pet) => {
+    const firstImage =
+      Array.isArray(pet.images) &&
+      pet.images.length > 0 &&
+      typeof pet.images[0] === 'string'
+        ? pet.images[0]
+        : 'https://placehold.co/400x300/CCCCCC/999999?text=Sem+Imagem';
+
+    return (
+      <TouchableOpacity 
+        key={pet.id} 
+        style={styles.petCard}
+        onPress={() => router.push(`/pets/${pet.id}` as never)}
+      >
+        <Image 
+          source={{ uri: firstImage }} 
+          style={styles.petImage}
+          resizeMode="cover"
+        />
+        <View style={styles.petInfo}>
+          <Text style={styles.petName}>{pet.name || 'Sem Nome'}</Text>
+          <Text style={styles.petBreed} numberOfLines={1}>
+            {pet.breed || 'Raça não informada'}
+          </Text>
+          {pet.description && (
+            <Text style={styles.petDescription} numberOfLines={2}>
+              {pet.description}
+            </Text>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      {/* 1. Texto de "Opss..." */}
       <Text style={styles.emptyText}>
         Opss... Parece que você ainda não adicionou nenhum pet...😢
       </Text>
-
-      {/* 2. Ícone de Paw (Centralizado) */}
       <Ionicons name="paw" size={120} color="#ccc" style={styles.emptyIcon} />
-
-      {/* 3. Texto de "Clique no coração" */}
       <Text style={styles.emptySubText}>
         Clique no coração (♡) ao lado dos pets que você gostar na tela inicial
         para vê-los aqui.
@@ -128,8 +218,33 @@ const FavoritesScreen = () => {
     </View>
   );
 
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#666" />
+        </View>
+      );
+    }
+
+    if (favoritePets.length === 0) {
+      return renderEmptyState();
+    }
+
+    return (
+      <View style={styles.petsContainer}>
+        {favoritePets.map(renderPetCard)}
+      </View>
+    );
+  };
+
+  // Obter estilos responsivos
+  const styles = getStyles(responsiveSize, isLargeScreen);
+
   return (
     <SafeAreaView style={styles.safeArea}>
+      {/* Adicionando um container para limitar a largura máxima em telas grandes */}
+      <View style={styles.maxWidthContainer}>
       <Stack.Screen options={screenOptions} />
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
@@ -150,7 +265,7 @@ const FavoritesScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {renderEmptyState()}
+        {renderContent()}
       </ScrollView>
 
       {/* ------------------ 3. BARRA DE NAVEGAÇÃO INFERIOR ------------------ */}
@@ -193,45 +308,114 @@ const FavoritesScreen = () => {
           onPress={handleTabPress}
         />
       </View>
+      </View>
     </SafeAreaView>
   );
 };
 
 // =========================================================================
-// ESTILIZAÇÃO
+// ESTILOS
 // =========================================================================
 
-const styles = StyleSheet.create({
+const getStyles = (responsiveSize: (size: number) => number, isLargeScreen: boolean) => {
+  const basePadding = isLargeScreen ? 30 : 15;
+  const cardWidth = isLargeScreen ? '48%' : '100%';
+  const cardMargin = isLargeScreen ? '1%' : 0;
+  
+  return StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  petsContainer: {
+    flexDirection: isLargeScreen ? 'row' : 'column',
+    flexWrap: isLargeScreen ? 'wrap' : 'nowrap',
+    width: '100%',
+    paddingHorizontal: responsiveSize(8),
+    paddingBottom: responsiveSize(100), // Espaço para a tab bar
+    justifyContent: isLargeScreen ? 'space-between' : 'flex-start',
+  },
+  petCard: {
+    flexDirection: isLargeScreen ? 'column' : 'row',
+    backgroundColor: '#fff',
+    borderRadius: responsiveSize(12),
+    marginBottom: responsiveSize(15),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    overflow: 'hidden',
+    width: cardWidth,
+    marginHorizontal: cardMargin,
+    maxWidth: isLargeScreen ? 300 : '100%',
+  },
+  petImage: {
+    width: isLargeScreen ? '100%' : responsiveSize(120),
+    height: isLargeScreen ? responsiveSize(180) : responsiveSize(120),
+    backgroundColor: '#f0f0f0',
+    minHeight: isLargeScreen ? responsiveSize(180) : responsiveSize(120),
+  },
+  petInfo: {
+    flex: 1,
+    padding: responsiveSize(12),
+    justifyContent: 'center',
+  },
+  petName: {
+    fontSize: responsiveSize(18),
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  petBreed: {
+    fontSize: responsiveSize(14),
+    color: '#666',
+    marginBottom: responsiveSize(6),
+  },
+  petDescription: {
+    fontSize: responsiveSize(13),
+    color: '#777',
+    lineHeight: responsiveSize(18),
+  },
   // --- Estrutura Básica ---
   safeArea: {
     flex: 1,
     backgroundColor: "#fff",
   },
+  maxWidthContainer: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 1200, // Aumentado para telas maiores
+    alignSelf: 'center',
+  },
   // Garante que o scroll content ocupe o espaço para centralizar o estado vazio
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 30,
-    paddingBottom: 100,
+    paddingHorizontal: responsiveSize(12),
+    paddingBottom: responsiveSize(100), // Espaço para a tab bar
+    width: '100%',
+    maxWidth: '100%',
   },
 
   // --- 1. Cabeçalho Personalizado ---
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 15,
+    paddingHorizontal: responsiveSize(15),
+    paddingVertical: responsiveSize(15),
     backgroundColor: "#fff",
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
     paddingTop:
-      Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 5 : 15,
+      Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 5 : responsiveSize(15),
   },
   backButton: {
-    padding: 5,
-    marginRight: 15,
+    padding: responsiveSize(5),
+    marginRight: responsiveSize(15),
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: responsiveSize(24),
     fontWeight: "700",
     color: "#333",
   },
@@ -240,27 +424,35 @@ const styles = StyleSheet.create({
   emptyContainer: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "center", // centra verticalmente
+    justifyContent: "center",
     textAlign: "center",
-    paddingVertical: 40,
+    paddingVertical: responsiveSize(40),
+    paddingHorizontal: responsiveSize(20),
+    width: '100%',
+    maxWidth: 500,
+    alignSelf: 'center',
   },
   emptyText: {
-    fontSize: 20,
+    fontSize: responsiveSize(18),
     fontWeight: "600",
     color: "#666",
-    lineHeight: 30,
+    lineHeight: responsiveSize(26),
     textAlign: "center",
-    marginBottom: 12, // espaço menor entre título e ícone
+    marginBottom: responsiveSize(12),
+    paddingHorizontal: responsiveSize(10),
   },
   emptyIcon: {
-    marginVertical: 8, // reduce spacing so subtext sits closer under the icon
+    marginVertical: responsiveSize(8),
     opacity: 0.7,
+    fontSize: responsiveSize(80),
   },
   emptySubText: {
-    fontSize: 14,
+    fontSize: responsiveSize(13),
     color: "#999",
     textAlign: "center",
-    marginTop: 6, // pequeno espaçamento entre ícone e subtexto
+    marginTop: responsiveSize(6),
+    paddingHorizontal: responsiveSize(15),
+    maxWidth: 400,
   },
 
   // --- 3. Bottom Tab Bar (Mantida Consistente) ---
@@ -269,53 +461,57 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     alignItems: "flex-start",
     backgroundColor: "#FFC837",
-    height: 85,
-    paddingHorizontal: 5,
-    paddingTop: 8,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    height: responsiveSize(75),
+    paddingHorizontal: responsiveSize(5),
+    paddingTop: responsiveSize(8),
+    borderTopLeftRadius: responsiveSize(20),
+    borderTopRightRadius: responsiveSize(20),
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: -5 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 10,
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
+    maxWidth: 600, // Limita a largura máxima da tab bar
+    alignSelf: 'center', // Centraliza a tab bar
   },
   tabItem: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 5,
+    paddingVertical: responsiveSize(5)
   },
   tabLabel: {
-    fontSize: 11,
+    fontSize: responsiveSize(11),
     fontWeight: "500",
     color: "#666",
-    marginTop: 2,
+    marginTop: responsiveSize(2),
   },
   tabLabelFocused: {
     color: "#333",
-    fontWeight: "700",
+    fontWeight: "700"
   },
   addButton: {
     backgroundColor: "#fff",
-    width: 65,
-    height: 65,
-    borderRadius: 35,
+    width: responsiveSize(60),
+    height: responsiveSize(60),
+    borderRadius: responsiveSize(30),
     justifyContent: "center",
     alignItems: "center",
-    marginTop: -30,
-    borderWidth: 5,
+    marginTop: responsiveSize(-25),
+    borderWidth: responsiveSize(4),
     borderColor: "#FFC837",
     shadowColor: "#333",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 8,
-  },
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 6,
+  }
 });
+
+};
 
 export default FavoritesScreen;

@@ -62,12 +62,21 @@ export const getFavoritePets = async (): Promise<any[]> => {
     if (!Array.isArray(favoriteDocs) || favoriteDocs.length === 0) return [];
     
     // Depois, busca os dados completos de cada pet favoritado
-    const petPromises = favoriteDocs.map((fav: any) => 
-      getDocument('pets', fav.petId)
-    );
-    
+    const petPromises = favoriteDocs.map(async (fav: any) => {
+      const petData = await getDocument('pets', fav.petId);
+
+      if (!petData) {
+        return null;
+      }
+
+      return {
+        id: fav.petId,
+        ...petData,
+      };
+    });
+
     const pets = await Promise.all(petPromises);
-    return pets.filter(pet => pet !== null); // Remove possíveis nulos
+    return pets.filter((pet) => pet !== null);
   } catch (error) {
     console.error('Erro ao buscar pets favoritos:', error);
     return [];

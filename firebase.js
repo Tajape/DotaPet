@@ -11,6 +11,7 @@ import {
     query,
     setDoc,
     updateDoc,
+    where,
 } from "firebase/firestore";
 import { getDownloadURL, getStorage, ref as storageRef, uploadBytes } from 'firebase/storage';
 
@@ -168,13 +169,40 @@ export const deleteDocument = async (collectionName, docId) => {
 /**
  * Query documents with filters
  * @param {string} collectionName - Name of the collection
- * @param {Array} constraints - Array of where/orderBy/limit constraints
+ * @param {Array} constraints - Array of Firestore constraints OR simple
+ *   objects in the form { field, operator, value }
  * @returns {Promise<Array>} Matching documents
  */
 export const queryDocuments = async (collectionName, constraints = []) => {
   try {
-    const q = query(collection(db, collectionName), ...constraints);
-    const querySnapshot = await getDocs(q);
+    let firestoreConstraints = [];
+
+    // Permite dois formatos:
+    // 1) constraints já prontos do Firestore (where, orderBy, limit, ...)
+    // 2) objetos simples { field, operator, value }
+    if (Array.isArray(constraints) && constraints.length > 0) {
+      firestoreConstraints = constraints.map((c) => {
+        if (
+          c &&
+          typeof c === "object" &&
+          "field" in c &&
+          "operator" in c &&
+          "value" in c
+        ) {
+          // Converte para where(field, operator, value)
+          return where(c.field, c.operator, c.value);
+        }
+        // Já é um constraint nativo
+        return c;
+      });
+    }
+
+    const baseCollection = collection(db, collectionName);
+    const qRef = firestoreConstraints.length
+      ? query(baseCollection, ...firestoreConstraints)
+      : baseCollection;
+
+    const querySnapshot = await getDocs(qRef);
     return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   } catch (error) {
     console.error(`Error querying ${collectionName}:`, error);

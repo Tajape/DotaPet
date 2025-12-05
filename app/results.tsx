@@ -1,25 +1,14 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import {
-    ActivityIndicator,
-    Dimensions,
-    Image,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-    BackHandler,
-} from 'react-native';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, BackHandler, Dimensions, Image, Platform, RefreshControl, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { hs as scale } from './utils/responsive';
+
 import { queryDocuments } from '../firebase';
-import { useFocusEffect } from 'expo-router';
+import { isPetFavorited, toggleFavorite } from '../services/favoritesService';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = width - 40;
+const CARD_WIDTH = width - scale(40);
 
 interface Pet {
   id: string;
@@ -57,10 +46,11 @@ const ResultsScreen = () => {
   const [pets, setPets] = useState<Pet[]>([]);
   const [filteredPets, setFilteredPets] = useState<Pet[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Handle do botão de voltar do sistema
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       const onBackPress = () => {
         router.back();
         return true;
@@ -68,67 +58,100 @@ const ResultsScreen = () => {
 
       const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () => subscription.remove();
-    }, [])
+    }, [router])
   );
 
-  useEffect(() => {
-    const loadResults = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Busca todos os pets do Firebase
-        const allPets = await queryDocuments('pets');
-        
-        console.log('All pets fetched:', allPets); // Debug
-        
-        if (!allPets || allPets.length === 0) {
-          setError('Nenhum pet encontrado.');
-          setPets([]);
-          setFilteredPets([]);
-          return;
-        }
-
-        // Converte para o formato esperado
-        const petsData: Pet[] = allPets.map((pet: any) => ({
-          id: pet.id || '',
-          name: pet.name || 'Sem Nome',
-          description: pet.description || '',
-          imageUrl: pet.imageUrl || 'https://placehold.co/400x300/CCCCCC/999999?text=Sem+Imagem',
-          type: pet.type || getPetTypeFromBreed(pet.breed),
-          breed: pet.breed || '',
-          color: pet.color || '',
-          gender: pet.gender || '',
-          size: pet.size || '',
-          isVaccinated: pet.isVaccinated || false,
-          isNeutered: pet.isNeutered || false,
-        }));
-
-        setPets(petsData);
-
-        // Filtra pelos critérios de busca
-        const filtered = petsData.filter(pet => {
-          const query = searchQuery.toLowerCase();
-          return (
-            pet.name.toLowerCase().includes(query) ||
-            pet.breed.toLowerCase().includes(query) ||
-            pet.color.toLowerCase().includes(query) ||
-            pet.description.toLowerCase().includes(query)
-          );
-        });
-
-        setFilteredPets(filtered);
-        setError(null);
-      } catch (err) {
-        console.error('Error loading results:', err);
-        setError('Ocorreu um erro ao carregar os resultados.');
+  // Função para carregar os resultados da busca
+  const loadResults = useCallback(async () => {
+    try {
+      // Busca todos os pets do Firebase
+      const allPets = await queryDocuments('pets');
+      
+      console.log('All pets fetched:', allPets); // Debug
+      
+      if (!allPets || allPets.length === 0) {
+        setError('Nenhum pet encontrado.');
+        setPets([]);
         setFilteredPets([]);
-      } finally {
-        setIsLoading(false);
+        return;
       }
-    };
 
-    loadResults();
+      // Converte para o formato esperado
+      const petsData: Pet[] = allPets.map((pet: any) => ({
+        id: pet.id || '',
+        name: pet.name || 'Sem Nome',
+        description: pet.description || '',
+        imageUrl: pet.imageUrl || 'https://placehold.co/400x300/CCCCCC/999999?text=Sem+Imagem',
+        type: pet.type || getPetTypeFromBreed(pet.breed),
+        breed: pet.breed || '',
+        color: pet.color || '',
+        gender: pet.gender || '',
+        size: pet.size || '',
+        isVaccinated: pet.isVaccinated || false,
+        isNeutered: pet.isNeutered || false,
+      }));
+
+      setPets(petsData);
+
+      // Filtra pelos critérios de busca
+      const filtered = petsData.filter(pet => {
+        const query = searchQuery.toLowerCase();
+        return (
+          pet.name?.toLowerCase().includes(query) ||
+          pet.breed?.toLowerCase().includes(query) ||
+          pet.color?.toLowerCase().includes(query) ||
+          pet.description?.toLowerCase().includes(query)
+        );
+      });
+
+      setFilteredPets(filtered);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading results:', err);
+      setError('Ocorreu um erro ao carregar os resultados.');
+      setFilteredPets([]);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
   }, [searchQuery]);
+
+  // Função para o pull-to-refresh
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadResults();
+  }, [loadResults]);
+
+  // Função para carregar os resultados quando a tela recebe foco
+  const loadResultsOnFocus = useCallback(() => {
+    setIsLoading(true);
+    loadResults();
+  }, [loadResults]);
+
+  // Carregar resultados quando a tela é aberta
+  useFocusEffect(
+    useCallback(() => {
+      loadResults();
+      
+      // Handle do botão de voltar
+      const onBackPress = () => {
+        router.back();
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        onBackPress
+      );
+
+      return () => subscription.remove();
+    }, [loadResults, router])
+  );
+
+  // Recarregar quando os parâmetros de busca mudarem
+  useEffect(() => {
+    loadResults();
+  }, [searchQuery, loadResults]);
 
   if (isLoading) {
     return (
@@ -193,7 +216,16 @@ const ResultsScreen = () => {
       </View>
 
       {/* Main Content */}
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#FFC837']}
+            tintColor="#FFC837"
+          />
+        }>
         <View style={styles.mainContent}>
           <Text style={styles.sectionTitle}>
             {filteredPets.length > 0 
@@ -245,6 +277,34 @@ const PetCardFullWidth: React.FC<PetCardFullWidthProps> = ({
   onPress 
 }: PetCardFullWidthProps) => {
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Verifica se o pet está nos favoritos ao carregar o componente
+  useEffect(() => {
+    const checkIfFavorite = async () => {
+      try {
+        const favorited = await isPetFavorited(id);
+        setIsFavorite(favorited);
+      } catch (error) {
+        console.error('Erro ao verificar favorito:', error);
+      }
+    };
+
+    checkIfFavorite();
+  }, [id]);
+
+  const handleToggleFavorite = async () => {
+    try {
+      setIsLoading(true);
+      const newFavoriteStatus = await toggleFavorite(id);
+      setIsFavorite(newFavoriteStatus);
+    } catch (error) {
+      console.error('Erro ao alternar favorito:', error);
+      // Mostrar algum feedback para o usuário, se necessário
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <TouchableOpacity style={styles.fullWidthPetCard} activeOpacity={0.9} onPress={onPress}>
@@ -252,8 +312,14 @@ const PetCardFullWidth: React.FC<PetCardFullWidthProps> = ({
       
       {/* Ícone de favorito no canto superior direito */}
       <TouchableOpacity 
-        style={styles.fullWidthFavoriteButton}
-        onPress={() => setIsFavorite(!isFavorite)}
+        style={[styles.fullWidthFavoriteButton, isLoading && { opacity: 0.7 }]}
+        onPress={(e) => {
+          e.stopPropagation(); // Impede que o onPress do card pai seja acionado
+          if (!isLoading) {
+            handleToggleFavorite();
+          }
+        }}
+        disabled={isLoading}
       >
         <Ionicons 
           name={isFavorite ? "heart" : "heart-outline"} 
@@ -266,7 +332,7 @@ const PetCardFullWidth: React.FC<PetCardFullWidthProps> = ({
         <View style={styles.fullWidthProfileIconContainer}>
           {/* Ícone do tipo de animal (Gato ou Cachorro) */}
           <Ionicons 
-            name={type === 'cat' ? 'cat' : 'dog'} 
+            name="paw"
             size={24} 
             color="#333" 
           />

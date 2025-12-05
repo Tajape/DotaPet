@@ -2,22 +2,22 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  Image,
-  Linking,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    Linking,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { getDocument } from "../../firebase";
 import { getCurrentUser } from "../../services/authService";
+import { ms as moderateScale, hs as scale, vs as verticalScale } from "../utils/responsive";
 
 // =========================================================================
 // TIPOS
@@ -48,16 +48,6 @@ interface Owner {
   neighborhood?: string;
   profileImage?: string | null;
 }
-
-// =========================================================================
-// DIMENSÕES RESPONSIVAS
-// =========================================================================
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-const scale = (size: number) => (SCREEN_WIDTH / 375) * size;
-const verticalScale = (size: number) => (SCREEN_HEIGHT / 667) * size;
-const moderateScale = (size: number, factor = 0.5) =>
-  size + (scale(size) - size) * factor;
 
 // =========================================================================
 // ESTILOS

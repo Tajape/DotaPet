@@ -3,18 +3,18 @@ import * as ImagePicker from "expo-image-picker";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Image,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Image,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { addDocument, getDocument, updateDocument } from "../firebase";
 import { getCurrentUser } from "../services/authService";
@@ -560,7 +560,7 @@ const RegisterPetScreen = () => {
               <ActivityIndicator color="#5a5a5aff" />
             ) : (
               <Text style={[styles.submitButtonText, { color: "#5a5a5aff" }]}>
-                Cadastrar
+                {isEditing ? 'Salvar' : 'Cadastrar'}
               </Text>
             )}
           </TouchableOpacity>

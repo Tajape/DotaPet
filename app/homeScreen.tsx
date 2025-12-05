@@ -2,7 +2,6 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Dimensions,
   Image,
   Platform,
   RefreshControl,
@@ -16,6 +15,8 @@ import {
 } from "react-native";
 import { getDocument, queryDocuments } from "../firebase";
 import { getCurrentUser } from "../services/authService";
+import { isPetFavorited, toggleFavorite } from "../services/favoritesService";
+import { ms as moderateScale, hs as scale, vs as verticalScale } from "./utils/responsive";
 
 // Definição de tipos para as props do componente TabItem
 interface TabItemProps {
@@ -41,13 +42,6 @@ interface UserProfile {
   neighborhood?: string;
   profileImage?: string | null;
 }
-
-// Função para calcular dimensões responsivas
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-const scale = (size: number) => (SCREEN_WIDTH / 375) * size;
-const verticalScale = (size: number) => (SCREEN_HEIGHT / 667) * size;
-const moderateScale = (size: number, factor = 0.5) =>
-  size + (scale(size) - size) * factor;
 
 // Estilos
 const createResponsiveStyles = () =>
@@ -95,20 +89,22 @@ const createResponsiveStyles = () =>
       flex: 1,
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: "#F3F3F3",
-      borderRadius: scale(30),
-      height: verticalScale(48),
+      backgroundColor: "#F5F5F5",
+      borderRadius: scale(10),
+      height: verticalScale(40),
       paddingHorizontal: scale(15),
-      borderWidth: 1,
-      borderColor: "#E0E0E0",
+      marginHorizontal: scale(16),
+      marginVertical: scale(8),
     },
     searchIcon: {
       marginRight: scale(8),
+      color: "#666",
     },
     searchPlaceholder: {
       fontSize: moderateScale(14),
-      color: "#888",
+      color: "#999",
       flexShrink: 1,
+      fontFamily: 'System',
     },
 
     // --- Título de Seção ---
@@ -148,38 +144,53 @@ const createResponsiveStyles = () =>
     // --- Card de Pet ---
     petCard: {
       backgroundColor: "#fff",
-      borderRadius: 12,
-      marginBottom: 12,
+      borderRadius: scale(15),
+      marginBottom: scale(16),
       overflow: "hidden",
-      flexDirection: "row",
-      borderWidth: 1,
-      borderColor: "#E0E0E0",
+      marginHorizontal: scale(16),
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 4,
-      elevation: 3,
+      elevation: 2,
     },
     petImage: {
-      width: 100,
-      height: 100,
+      width: "100%",
+      height: verticalScale(180),
       backgroundColor: "#F0F0F0",
     },
     petInfo: {
+      padding: scale(12),
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    petTextContainer: {
       flex: 1,
-      padding: 12,
-      justifyContent: "center",
     },
     petName: {
-      fontSize: 16,
-      fontWeight: "600",
+      fontSize: moderateScale(16),
+      fontWeight: "700",
       color: "#333",
-      marginBottom: 4,
+      marginBottom: scale(2),
     },
     petDetails: {
-      fontSize: 13,
+      fontSize: moderateScale(12),
       color: "#666",
-      marginBottom: 2,
+      marginBottom: 0,
+    },
+    petAgeBadge: {
+      backgroundColor: "#fff",
+      borderRadius: scale(12),
+      paddingHorizontal: scale(10),
+      paddingVertical: scale(4),
+      borderWidth: 1,
+      borderColor: "#E0E0E0",
+      marginLeft: scale(8),
+    },
+    petAgeText: {
+      fontSize: moderateScale(12),
+      fontWeight: "700",
+      color: "#666",
     },
     // --- Novo estilo para cards (estilo semelhante ao anexo)
     cardWrapper: {
@@ -252,17 +263,16 @@ const createResponsiveStyles = () =>
     tabBarContainer: {
       flexDirection: "row",
       justifyContent: "space-around",
-      alignItems: "flex-start",
+      alignItems: "center",
       backgroundColor: "#FFC837",
-      height: verticalScale(75),
+      height: verticalScale(70),
       paddingHorizontal: scale(5),
-      paddingTop: verticalScale(8),
-      borderTopLeftRadius: scale(30),
-      borderTopRightRadius: scale(30),
+      borderTopLeftRadius: scale(20),
+      borderTopRightRadius: scale(20),
       shadowColor: "#000",
-      shadowOffset: { width: 0, height: -scale(5) },
-      shadowOpacity: 0.15,
-      shadowRadius: scale(10),
+      shadowOffset: { width: 0, height: -2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
       elevation: 10,
       position: "absolute",
       bottom: 0,
@@ -273,7 +283,11 @@ const createResponsiveStyles = () =>
       flex: 1,
       alignItems: "center",
       justifyContent: "center",
-      paddingVertical: verticalScale(5),
+      paddingVertical: verticalScale(8),
+      height: "100%",
+    },
+    tabIcon: {
+      marginBottom: scale(4),
     },
     tabLabel: {
       fontSize: moderateScale(10),
@@ -282,26 +296,26 @@ const createResponsiveStyles = () =>
       marginTop: verticalScale(2),
     },
     tabLabelFocused: {
-      color: "#333",
+      color: "#000",
       fontWeight: "700",
     },
 
     // --- Botão Central de Adicionar ---
     addButton: {
       backgroundColor: "#fff",
-      width: scale(60),
-      height: scale(60),
-      borderRadius: scale(30),
+      width: scale(56),
+      height: scale(56),
+      borderRadius: scale(28),
       justifyContent: "center",
       alignItems: "center",
-      marginTop: -verticalScale(25),
-      borderWidth: scale(4),
+      marginTop: -verticalScale(20),
+      borderWidth: scale(3),
       borderColor: "#FFC837",
-      shadowColor: "#333",
-      shadowOffset: { width: 0, height: scale(3) },
-      shadowOpacity: 0.4,
-      shadowRadius: scale(4),
-      elevation: 8,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 6,
     },
   });
 
@@ -382,6 +396,7 @@ const HomeScreen = () => {
   // Componente para renderizar cada card de pet
   const PetCard = ({ pet, index }: { pet: any; index: number }) => {
     const [isFavorite, setIsFavorite] = useState(false);
+    const [isToggling, setIsToggling] = useState(false);
 
     // 🔧 GARANTIR QUE firstImage É STRING
     const firstImage =
@@ -393,9 +408,34 @@ const HomeScreen = () => {
         ? pet.image
         : MOCK_USER_PROFILE.imageUri;
 
-    const toggleFavorite = (e: any) => {
+    React.useEffect(() => {
+      const loadFavoriteState = async () => {
+        try {
+          if (!pet.id) return;
+          const favorited = await isPetFavorited(pet.id);
+          setIsFavorite(favorited);
+        } catch (error) {
+          console.error("Erro ao verificar favorito:", error);
+        }
+      };
+
+      loadFavoriteState();
+    }, [pet.id]);
+
+    const handleToggleFavorite = async (e: any) => {
       e.stopPropagation();
-      setIsFavorite(!isFavorite);
+
+      if (!pet.id || isToggling) return;
+
+      try {
+        setIsToggling(true);
+        const favorited = await toggleFavorite(pet.id);
+        setIsFavorite(favorited);
+      } catch (error) {
+        console.error("Erro ao alternar favorito:", error);
+      } finally {
+        setIsToggling(false);
+      }
     };
 
     return (
@@ -411,8 +451,9 @@ const HomeScreen = () => {
 
           <TouchableOpacity
             style={styles.favoriteButton}
-            onPress={toggleFavorite}
+            onPress={handleToggleFavorite}
             activeOpacity={0.8}
+            disabled={isToggling}
           >
             <Ionicons
               name={isFavorite ? "heart" : "heart-outline"}
@@ -438,32 +479,32 @@ const HomeScreen = () => {
   };
 
   // --- Componente TabItem ---
-  const TabItem: React.FC<TabItemProps> = ({
-    name,
-    label,
-    route,
-    isFocused,
-  }) => (
-    <TouchableOpacity
-      key={route}
-      style={styles.tabItem}
-      onPress={() => handleTabPress(route)}
-      disabled={isFocused}
-    >
-      <Ionicons
-        name={
-          isFocused
-            ? (name.replace("-outline", "") as "home")
-            : (name as "home-outline")
-        }
-        size={24}
-        color={isFocused ? "#333" : "#666"}
-      />
-      <Text style={[styles.tabLabel, isFocused && styles.tabLabelFocused]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
+  const TabItem = ({ name, label, route, isFocused }: TabItemProps) => {
+    return (
+      <TouchableOpacity
+        style={styles.tabItem}
+        onPress={() => handleTabPress(route)}
+        activeOpacity={0.7}
+        disabled={isFocused}
+      >
+        <Ionicons
+          name={name as any}
+          size={24}
+          color={isFocused ? "#000" : "#666"}
+          style={styles.tabIcon}
+        />
+        <Text
+          style={[
+            styles.tabLabel,
+            isFocused && styles.tabLabelFocused,
+          ]}
+          numberOfLines={1}
+        >
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -512,7 +553,7 @@ const HomeScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <View style={[styles.mainContent, { marginTop: 15 }]}>
+        <View style={[styles.mainContent, { marginTop: verticalScale(15) }]}> 
           {isLoading ? (
             <View style={styles.placeholderCardContainer}>
               <Ionicons
@@ -544,7 +585,7 @@ const HomeScreen = () => {
             </View>
           )}
 
-          <View style={{ height: 50 }} />
+          <View style={{ height: verticalScale(50) }} />
         </View>
       </ScrollView>
 
@@ -564,12 +605,15 @@ const HomeScreen = () => {
           isFocused={currentRoute === "/searchScreen"}
         />
 
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => handleTabPress("/register-pet")}
-        >
-          <Ionicons name="add" size={32} color="#333" />
-        </TouchableOpacity>
+        <View style={{ width: scale(70), alignItems: 'center' }}>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => handleTabPress("/register-pet")}
+            activeOpacity={0.9}
+          >
+            <Ionicons name="add" size={28} color="#333" />
+          </TouchableOpacity>
+        </View>
 
         <TabItem
           name="heart-outline"
