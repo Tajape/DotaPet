@@ -151,7 +151,7 @@ const UserProfileScreen = () => {
 
       // Pequeno delay para garantir que o perfil foi salvo
       setTimeout(() => {
-        router.replace("/homeScreen" as never);
+        router.replace("homeScreen" as never);
       }, 500);
     } catch (error: any) {
       Alert.alert('Erro', error.message || 'Falha ao atualizar perfil.');

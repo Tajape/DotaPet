@@ -16,8 +16,13 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { addDocument, getDocument, updateDocument } from "../firebase";
+import {
+    addDocument,
+    getDocument,
+    updateDocument
+} from "../firebase";
 import { getCurrentUser } from "../services/authService";
+import { uploadPetImage } from "../services/supabaseStorage";
 
 // =========================================================================
 // TIPOS E DADOS
@@ -25,6 +30,22 @@ import { getCurrentUser } from "../services/authService";
 
 type Gender = "Macho" | "Fêmea" | null;
 type Size = "pequeno" | "médio" | "grande" | null;
+
+interface PetData {
+  name: string;
+  age: string;
+  color: string;
+  breed: string;
+  description: string;
+  gender: Gender;
+  size: Size;
+  isVaccinated: boolean;
+  isNeutered: boolean;
+  images: string[];
+  ownerId: string;
+  createdAt: Date;
+  [key: string]: any; // Para outras propriedades que possam existir
+}
 type BooleanOption = boolean | null;
 const MAX_IMAGES = 5;
 
@@ -51,7 +72,7 @@ const RegisterPetScreen = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // --- Funções de Imagem (Inalteradas) ---
+  // --- Funções de Imagem ---
   const handleImageUpload = async () => {
     if (selectedImages.length >= MAX_IMAGES) {
       Alert.alert(
@@ -88,24 +109,28 @@ const RegisterPetScreen = () => {
       if (petId && typeof petId === "string") {
         try {
           setIsLoading(true);
-          const petData = await getDocument("pets", petId);
+          const petData = await getDocument("pets", petId) as PetData;
 
           if (petData) {
             setIsEditing(true);
-            setName(petData.name);
-            setColor(petData.color);
-            setBreed(petData.breed);
-            setDescription(petData.description);
-            setGender(petData.gender);
-            setSize(petData.size);
-            setIsVaccinated(petData.isVaccinated);
-            setIsNeutered(petData.isNeutered);
-            setSelectedImages(petData.images || []);
+            setName(petData.name || '');
+            setColor(petData.color || '');
+            setBreed(petData.breed || '');
+            setDescription(petData.description || '');
+            setGender(petData.gender || null);
+            setSize(petData.size || null);
+            setIsVaccinated(petData.isVaccinated || false);
+            setIsNeutered(petData.isNeutered || false);
+            setSelectedImages(Array.isArray(petData.images) ? petData.images : []);
 
-            // Parse idade
-            const ageParts = petData.age.split(" ");
-            setAgeNumber(ageParts[0]);
-            setAgeUnit(ageParts[1].includes("ano") ? "anos" : "meses");
+            // Converte a idade de volta para os campos de número e unidade
+            if (petData.age) {
+              const ageMatch = String(petData.age).match(/(\d+)\s*(ano|mês)/i);
+              if (ageMatch) {
+                setAgeNumber(ageMatch[1]);
+                setAgeUnit(ageMatch[2].toLowerCase().includes('ano') ? 'anos' : 'meses');
+              }
+            }
           }
         } catch (error) {
           console.error("Erro ao carregar pet:", error);
@@ -119,7 +144,7 @@ const RegisterPetScreen = () => {
     loadPetData();
   }, [petId]);
 
-  // --- Função de Submissão com Firebase ---
+  // --- Função de Submissão com Firebase + Supabase Storage ---
   const handleSubmit = async () => {
     if (
       !name.trim() ||
@@ -149,17 +174,53 @@ const RegisterPetScreen = () => {
 
       const age = `${ageNumber} ${ageUnit === "anos" ? "ano(s)" : "mês(es)"}`;
 
-      const petData = {
+      // 🔧 Upload das imagens para Supabase Storage
+      const imageUrls: string[] = [];
+
+      for (let index = 0; index < selectedImages.length; index++) {
+        let uri = selectedImages[index];
+        console.log(`Processando imagem ${index + 1} de ${selectedImages.length}:`, uri);
+
+        // Se já for uma URL (edição de pet com imagens existentes), reutiliza
+        if (typeof uri === 'string' && (uri.startsWith("http://") || uri.startsWith("https://"))) {
+          console.log('Imagem já é uma URL, reutilizando:', uri);
+          imageUrls.push(uri);
+          continue;
+        }
+
+        // Se não for uma string ou estiver vazia, pula
+        if (typeof uri !== 'string' || !uri.trim()) {
+          console.warn('URI de imagem inválida, pulando:', uri);
+          continue;
+        }
+
+        try {
+          console.log('Enviando imagem para Supabase Storage...');
+          const publicUrl = await uploadPetImage(uri, user.uid);
+          console.log('Imagem enviada com sucesso. URL pública:', publicUrl);
+          imageUrls.push(publicUrl);
+        } catch (error) {
+          console.error("Erro ao fazer upload da imagem para Supabase:", error);
+          Alert.alert(
+            "Erro ao enviar imagem",
+            "Não foi possível enviar uma das imagens. Tente novamente."
+          );
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      const petData: PetData = {
         name: name.trim(),
         age,
         color: color.trim() || "Não informado",
         breed: breed.trim(),
         description: description.trim() || "Sem descrição",
-        gender,
-        size,
-        isVaccinated,
-        isNeutered,
-        images: selectedImages,
+        gender: gender as Gender,
+        size: size as Size,
+        isVaccinated: Boolean(isVaccinated),
+        isNeutered: Boolean(isNeutered),
+        images: imageUrls,
         ownerId: user.uid,
         createdAt: new Date(),
       };

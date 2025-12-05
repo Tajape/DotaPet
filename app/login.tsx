@@ -87,7 +87,7 @@ const TelaLogin = () => {
       Alert.alert('Sucesso!', 'Login realizado com sucesso!');
       // Pequeno delay para garantir que o auth state foi atualizado
       setTimeout(() => {
-        router.replace('/homeScreen' as never);
+        router.replace('homeScreen' as never);
       }, 500);
     } catch (error: any) {
       Alert.alert('Erro de Login', 'Verifique se o email ou senha estão corretos.');
@@ -98,7 +98,7 @@ const TelaLogin = () => {
 
   const handleForgotPassword = () => {
     console.log('Navegando para Esqueceu Senha');
-    router.push('/forgot-password' as never);
+    router.push('forgot-password' as never);
   };
   
   const handleGoBack = () => {

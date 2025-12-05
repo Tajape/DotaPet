@@ -2,18 +2,19 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
-  Alert,
-  BackHandler,
-  Image,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    BackHandler,
+    Image,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getDocument } from "../firebase";
 import { getCurrentUser } from "../services/authService";
 
@@ -100,13 +101,14 @@ const OptionButton: React.FC<OptionButtonProps> = ({
 
 const MyProfileScreen = () => {
   const router = useRouter();
-  const currentRoute: string = "/my-profile"; // Current screen
+  const insets = useSafeAreaInsets();
+  const currentRoute: string = "my-profile"; // Current screen
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   // LÓGICA DE VOLTAR: SEMPRE LEVA PARA A HOME (Mantido)
-  const handleGoBack = () => {
-    router.replace("/homeScreen" as never);
-  };
+  const handleGoBack = useCallback(() => {
+    router.replace("homeScreen" as never);
+  }, [router]);
 
   // Carregar dados do perfil ao focar na tela
   useFocusEffect(
@@ -139,12 +141,12 @@ const MyProfileScreen = () => {
       );
 
       return () => subscription.remove();
-    }, [])
+    }, [handleGoBack])
   );
 
   // LÓGICA DOS OUTROS BOTÕES (Mantido)
   const handleFavoritesPress = () => {
-    router.replace("/favorites" as never);
+    router.replace("favorites" as never);
   };
 
   const handleApplicationsPress = () => {
@@ -185,8 +187,8 @@ const MyProfileScreen = () => {
       return;
     }
 
-    if (route === "/register-pet") {
-      router.push("/register-pet" as never);
+    if (route === "register-pet") {
+      router.push("register-pet" as never);
     } else {
       router.replace(route as never);
     }
@@ -267,25 +269,25 @@ const MyProfileScreen = () => {
       </ScrollView>
 
       {/* ------------------ 3. BARRA DE NAVEGAÇÃO INFERIOR ------------------ */}
-      <View style={styles.tabBarContainer}>
+      <View style={[styles.tabBarContainer, { bottom: insets.bottom }]}>
         <TabItem
           name="home-outline"
           label="Início"
-          route="/homeScreen"
-          isFocused={currentRoute === "/homeScreen"}
+          route="homeScreen"
+          isFocused={currentRoute === "homeScreen"}
           onPress={handleTabPress}
         />
         <TabItem
           name="search-outline"
           label="Pesquisar"
-          route="/searchScreen"
-          isFocused={currentRoute === "/searchScreen"}
+          route="searchScreen"
+          isFocused={currentRoute === "searchScreen"}
           onPress={handleTabPress}
         />
 
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => handleTabPress("/register-pet")}
+          onPress={() => handleTabPress("register-pet")}
         >
           <Ionicons name="add" size={32} color="#333" />
         </TouchableOpacity>
@@ -293,16 +295,16 @@ const MyProfileScreen = () => {
         <TabItem
           name="heart-outline"
           label="Favoritos"
-          route="/favorites"
-          isFocused={currentRoute === "/favorites"}
+          route="favorites"
+          isFocused={currentRoute === "favorites"}
           onPress={handleTabPress}
         />
 
         <TabItem
           name="person-outline"
           label="Perfil"
-          route="/my-profile"
-          isFocused={currentRoute === "/my-profile"}
+          route="my-profile"
+          isFocused={currentRoute === "my-profile"}
           onPress={handleTabPress}
         />
       </View>
@@ -322,7 +324,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 100,
+    paddingBottom: 100 + (StatusBar.currentHeight || 0),
   },
 
   // --- 1. Cabeçalho Personalizado ---
@@ -412,17 +414,17 @@ const styles = StyleSheet.create({
   tabBarContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
-    alignItems: "flex-start",
+    alignItems: "center",
     backgroundColor: "#FFC837",
-    height: 85,
+    height: 75,
     paddingHorizontal: 5,
     paddingTop: 8,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: -5 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
     elevation: 10,
     position: "absolute",
     bottom: 0,

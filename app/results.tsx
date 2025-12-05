@@ -1,14 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, BackHandler, Dimensions, Image, Platform, RefreshControl, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { hs as scale } from './utils/responsive';
+import { ActivityIndicator, BackHandler, Image, RefreshControl, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { queryDocuments } from '../firebase';
 import { isPetFavorited, toggleFavorite } from '../services/favoritesService';
-
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = width - scale(40);
 
 interface Pet {
   id: string;
@@ -24,6 +20,15 @@ interface Pet {
   isNeutered?: boolean;
 }
 
+interface PetCardFullWidthProps {
+  id: string;
+  name: string;
+  description: string;
+  imageUri: string;
+  type?: 'cat' | 'dog';
+  onPress?: () => void;
+}
+
 const getPetTypeFromBreed = (breed?: string): 'cat' | 'dog' => {
   if (!breed) return 'dog';
   const catBreeds = ['persa', 'siamês', 'angorá', 'sphynx'];
@@ -32,9 +37,113 @@ const getPetTypeFromBreed = (breed?: string): 'cat' | 'dog' => {
   ) ? 'cat' : 'dog';
 };
 
-// =========================================================================
-// 1. COMPONENTE PRINCIPAL (ResultsScreen)
-// =========================================================================
+const PetCardFullWidth = ({ 
+  id,
+  name, 
+  description, 
+  imageUri, 
+  type = 'dog',
+  onPress 
+}: PetCardFullWidthProps) => {
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Check if pet is favorited when component mounts
+  useEffect(() => {
+    const checkIfFavorite = async () => {
+      try {
+        const favorited = await isPetFavorited(id);
+        setIsFavorite(favorited);
+      } catch (error) {
+        console.error('Error checking favorite status:', error);
+      }
+    };
+
+    checkIfFavorite();
+  }, [id]);
+
+  const handleToggleFavorite = async (e: any) => {
+    e.stopPropagation();
+    if (isLoading) return;
+
+    try {
+      setIsLoading(true);
+      const newFavoriteStatus = await toggleFavorite(id);
+      setIsFavorite(newFavoriteStatus);
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const isBase64 = (str: string) => {
+    return str.startsWith('data:image/');
+  };
+
+  const handleImageError = (e: any) => {
+    console.log('Erro ao carregar imagem:', e.nativeEvent.error);
+    if (imageUri && isBase64(imageUri)) {
+      console.log('Possível problema com o formato da imagem base64');
+    }
+  };
+
+  const renderImage = () => {
+    if (!imageUri) {
+      return (
+        <View style={styles.imageContainer}>
+          <Ionicons name="paw" size={48} color="#999" />
+        </View>
+      );
+    }
+
+    const uri = isBase64(imageUri) 
+      ? imageUri 
+      : imageUri;
+
+    return (
+      <Image 
+        source={{ uri }} 
+        style={styles.cardImage} 
+        resizeMode="cover"
+        onError={handleImageError}
+      />
+    );
+  };
+
+  return (
+    <View style={styles.cardWrapper}>
+      <TouchableOpacity style={styles.card} onPress={onPress}>
+        <View style={styles.imageContainer}>
+          {renderImage()}
+        </View>
+        
+        <TouchableOpacity 
+          style={[styles.favoriteButton, isLoading && { opacity: 0.7 }]}
+          onPress={handleToggleFavorite}
+          disabled={isLoading}
+        >
+          <Ionicons 
+            name={isFavorite ? "heart" : "heart-outline"} 
+            size={24} 
+            color={isFavorite ? "#FF3B30" : "#FFF"} 
+          />
+        </TouchableOpacity>
+
+        <View style={styles.cardContent}>
+          <View style={styles.cardText}>
+            <Text style={styles.cardName} numberOfLines={1}>
+              {name || 'Sem Nome'}
+            </Text>
+            <Text style={styles.cardDescription} numberOfLines={2}>
+              {description || 'Sem descrição disponível'}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 const ResultsScreen = () => {
   const router = useRouter();
@@ -43,7 +152,6 @@ const ResultsScreen = () => {
   // Get search parameters
   const searchQuery = (params.searchQuery as string) || 'Todos os Pets';
   const [isLoading, setIsLoading] = useState(true);
-  const [pets, setPets] = useState<Pet[]>([]);
   const [filteredPets, setFilteredPets] = useState<Pet[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -71,27 +179,31 @@ const ResultsScreen = () => {
       
       if (!allPets || allPets.length === 0) {
         setError('Nenhum pet encontrado.');
-        setPets([]);
         setFilteredPets([]);
         return;
       }
 
       // Converte para o formato esperado
-      const petsData: Pet[] = allPets.map((pet: any) => ({
-        id: pet.id || '',
-        name: pet.name || 'Sem Nome',
-        description: pet.description || '',
-        imageUrl: pet.imageUrl || 'https://placehold.co/400x300/CCCCCC/999999?text=Sem+Imagem',
-        type: pet.type || getPetTypeFromBreed(pet.breed),
-        breed: pet.breed || '',
-        color: pet.color || '',
-        gender: pet.gender || '',
-        size: pet.size || '',
-        isVaccinated: pet.isVaccinated || false,
-        isNeutered: pet.isNeutered || false,
-      }));
-
-      setPets(petsData);
+      const petsData: Pet[] = allPets.map((pet: any) => {
+        // Verifica se a imagem está em base64 ou é uma URL
+        const imageUrl = Array.isArray(pet.images) && pet.images.length > 0 
+          ? pet.images[0] // Pega a primeira imagem do array
+          : pet.imageUrl || 'https://placehold.co/400x300/CCCCCC/999999?text=Sem+Imagem';
+          
+        return {
+          id: pet.id || '',
+          name: pet.name || 'Sem Nome',
+          description: pet.description || '',
+          imageUrl: imageUrl,
+          type: pet.type || getPetTypeFromBreed(pet.breed),
+          breed: pet.breed || '',
+          color: pet.color || '',
+          gender: pet.gender || '',
+          size: pet.size || '',
+          isVaccinated: pet.isVaccinated || false,
+          isNeutered: pet.isNeutered || false,
+        };
+      });
 
       // Filtra pelos critérios de busca
       const filtered = petsData.filter(pet => {
@@ -119,12 +231,6 @@ const ResultsScreen = () => {
   // Função para o pull-to-refresh
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    loadResults();
-  }, [loadResults]);
-
-  // Função para carregar os resultados quando a tela recebe foco
-  const loadResultsOnFocus = useCallback(() => {
-    setIsLoading(true);
     loadResults();
   }, [loadResults]);
 
@@ -243,7 +349,7 @@ const ResultsScreen = () => {
               description={pet.description}
               imageUri={pet.imageUrl}
               type={pet.type || 'dog'}
-              onPress={() => router.push(`/pet-details/${pet.id}` as never)}
+              onPress={() => router.push(`/pets/${pet.id}` as never)}
             />
           ))}
 
@@ -255,256 +361,170 @@ const ResultsScreen = () => {
   );
 };
 
-// =========================================================================
-// 2. COMPONENTE DE CARD DE PET (FULL WIDTH)
-// =========================================================================
-
-interface PetCardFullWidthProps {
-  id: string;
-  name: string;
-  description: string;
-  imageUri: string;
-  type: 'cat' | 'dog';
-  onPress?: () => void;
-}
-
-const PetCardFullWidth: React.FC<PetCardFullWidthProps> = ({ 
-  id,
-  name, 
-  description, 
-  imageUri, 
-  type,
-  onPress 
-}: PetCardFullWidthProps) => {
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Verifica se o pet está nos favoritos ao carregar o componente
-  useEffect(() => {
-    const checkIfFavorite = async () => {
-      try {
-        const favorited = await isPetFavorited(id);
-        setIsFavorite(favorited);
-      } catch (error) {
-        console.error('Erro ao verificar favorito:', error);
-      }
-    };
-
-    checkIfFavorite();
-  }, [id]);
-
-  const handleToggleFavorite = async () => {
-    try {
-      setIsLoading(true);
-      const newFavoriteStatus = await toggleFavorite(id);
-      setIsFavorite(newFavoriteStatus);
-    } catch (error) {
-      console.error('Erro ao alternar favorito:', error);
-      // Mostrar algum feedback para o usuário, se necessário
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <TouchableOpacity style={styles.fullWidthPetCard} activeOpacity={0.9} onPress={onPress}>
-      <Image source={{ uri: imageUri }} style={styles.fullWidthCardImage} />
-      
-      {/* Ícone de favorito no canto superior direito */}
-      <TouchableOpacity 
-        style={[styles.fullWidthFavoriteButton, isLoading && { opacity: 0.7 }]}
-        onPress={(e) => {
-          e.stopPropagation(); // Impede que o onPress do card pai seja acionado
-          if (!isLoading) {
-            handleToggleFavorite();
-          }
-        }}
-        disabled={isLoading}
-      >
-        <Ionicons 
-          name={isFavorite ? "heart" : "heart-outline"} 
-          size={28} 
-          color={isFavorite ? "#FF3B30" : "#FFF"} 
-        />
-      </TouchableOpacity>
-
-      <View style={styles.fullWidthCardOverlay}>
-        <View style={styles.fullWidthProfileIconContainer}>
-          {/* Ícone do tipo de animal (Gato ou Cachorro) */}
-          <Ionicons 
-            name="paw"
-            size={24} 
-            color="#333" 
-          />
-        </View>
-        <View style={styles.fullWidthCardInfo}>
-          <Text style={styles.fullWidthCardName}>{name}</Text>
-          <Text style={styles.fullWidthCardDescription} numberOfLines={2}>
-            {description || 'Sem descrição disponível'}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-};
-
-// =========================================================================
-// 3. ESTILIZAÇÃO
-// =========================================================================
-
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    backgroundColor: '#fff',
   },
   loadingText: {
     marginTop: 10,
-    color: '#666',
     fontSize: 16,
+    color: '#666',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  backButtonStyle: {
+    padding: 8,
+    marginRight: 8,
+  },
+  titleContainer: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  titleText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+  },
+  subtitleText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
+  mainContent: {
+    padding: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 16,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 32,
   },
   emptyText: {
-    marginTop: 10,
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
     textAlign: 'center',
+    marginTop: 16,
   },
   emptySubText: {
-    marginTop: 5,
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
-  },
-  safeArea: { 
-    flex: 1, 
-    backgroundColor: '#fff' 
-  },
-
-  // --- HEADER ---
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 10,
-  },
-  backButtonStyle: {
-    marginRight: 10,
-    padding: 5,
-  },
-  titleContainer: {
-    flex: 1,
-    paddingLeft: 5,
-    justifyContent: 'center',
-  },
-  titleText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#999',
-  },
-  subtitleText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#333',
-  },
-
-  // --- CONTENT ---
-  scrollContent: {
-    paddingBottom: 20,
-  },
-  mainContent: {
-    paddingHorizontal: 20,
-  },
-  sectionTitle: {
-    fontSize: 20, 
-    fontWeight: '700',
-    color: '#333',
-    marginTop: 25,
-    marginBottom: 15,
-  },
-
-  // --- ESTILO DE CARD FULL WIDTH ---
-  fullWidthPetCard: {
-    width: CARD_WIDTH,
-    height: CARD_WIDTH * 1.1,
-    borderRadius: 20,
-    overflow: 'hidden',
-    marginBottom: 20,
-    backgroundColor: '#f8f8f8',
-    alignSelf: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  fullWidthCardImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  fullWidthFavoriteButton: {
-    position: 'absolute',
-    top: 15,
-    right: 15,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    borderRadius: 20,
-    padding: 5,
-  },
-  fullWidthCardOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    minHeight: 120,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  fullWidthProfileIconContainer: {
-    backgroundColor: '#FFC837',
-    borderRadius: 25,
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-    borderWidth: 2,
-    borderColor: '#FFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 4,
-  },
-  fullWidthCardInfo: {
-    flex: 1,
-  },
-  fullWidthCardName: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 2,
-  },
-  fullWidthCardDescription: {
     fontSize: 14,
     color: '#666',
-    lineHeight: 20,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  // Estilos para o card
+  cardWrapper: {
+    marginBottom: 20,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  card: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+  },
+  imageContainer: {
+    width: '100%',
+    height: 200,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#f5f5f5',
+    resizeMode: 'cover',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  placeholderImage: {
+    width: 80,
+    height: 80,
+    opacity: 0.5,
+  },
+  cardContent: {
+    padding: 12,
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+  },
+  cardText: {
+    flex: 1,
+    marginRight: 8,
+  },
+  cardName: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111',
+    marginBottom: 4,
+  },
+  cardDescription: {
+    fontSize: 12,
+    color: '#777',
+  },
+  cardAgeBadge: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#eee',
+    marginLeft: 8,
+  },
+  cardAgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#666',
+  },
+  favoriteButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    borderRadius: 20,
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 8,
+  },
+  backButtonIcon: {
+    fontSize: 24,
+    color: '#333',
   },
 });
 

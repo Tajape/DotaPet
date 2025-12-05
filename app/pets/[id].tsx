@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { getDocument } from "../../firebase";
 import { getCurrentUser } from "../../services/authService";
+import { isPetFavorited, toggleFavorite } from "../../services/favoritesService";
 import { ms as moderateScale, hs as scale, vs as verticalScale } from "../utils/responsive";
 
 // =========================================================================
@@ -318,6 +319,7 @@ const PetDetailsScreen = () => {
   const [pet, setPet] = useState<Pet | null>(null);
   const [owner, setOwner] = useState<Owner | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -413,12 +415,45 @@ const PetDetailsScreen = () => {
     loadPetData();
   }, [id]);
 
+  useEffect(() => {
+    const loadFavoriteState = async () => {
+      try {
+        if (!id || Array.isArray(id)) {
+          return;
+        }
+
+        const favorited = await isPetFavorited(id as string);
+        setIsFavorite(favorited);
+      } catch (error) {
+        console.error("❌ Erro ao verificar favorito do pet:", error);
+      }
+    };
+
+    loadFavoriteState();
+  }, [id]);
+
   // Navegar entre imagens
   const goToPreviousImage = () => {
     if (pet && Array.isArray(pet.images) && pet.images.length > 1) {
       setCurrentImageIndex((prev) =>
         prev === 0 ? pet.images.length - 1 : prev - 1
       );
+    }
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!pet || !pet.id || isTogglingFavorite) {
+      return;
+    }
+
+    try {
+      setIsTogglingFavorite(true);
+      const favorited = await toggleFavorite(pet.id);
+      setIsFavorite(favorited);
+    } catch (error) {
+      console.error("❌ Erro ao alternar favorito do pet:", error);
+    } finally {
+      setIsTogglingFavorite(false);
     }
   };
 
@@ -521,7 +556,8 @@ const PetDetailsScreen = () => {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.favoriteButton}
-          onPress={() => setIsFavorite(!isFavorite)}
+          onPress={handleToggleFavorite}
+          disabled={isTogglingFavorite}
         >
           <Ionicons
             name={isFavorite ? "heart" : "heart-outline"}

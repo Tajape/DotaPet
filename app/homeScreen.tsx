@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getDocument, queryDocuments } from "../firebase";
 import { getCurrentUser } from "../services/authService";
 import { isPetFavorited, toggleFavorite } from "../services/favoritesService";
@@ -44,7 +45,7 @@ interface UserProfile {
 }
 
 // Estilos
-const createResponsiveStyles = () =>
+const createResponsiveStyles = (insets: { top: number; bottom: number }) =>
   StyleSheet.create({
     // --- Estrutura Básica ---
     safeArea: {
@@ -52,7 +53,9 @@ const createResponsiveStyles = () =>
       backgroundColor: "#fff",
     },
     scrollContent: {
-      paddingBottom: verticalScale(80) + (Platform.OS === "ios" ? 20 : 0),
+      paddingBottom:
+        verticalScale(80) +
+        (Platform.OS === "ios" ? Math.max(insets.bottom, 20) : insets.bottom),
     },
     mainContent: {
       paddingHorizontal: scale(16),
@@ -265,7 +268,7 @@ const createResponsiveStyles = () =>
       justifyContent: "space-around",
       alignItems: "center",
       backgroundColor: "#FFC837",
-      height: verticalScale(70),
+      height: verticalScale(75),
       paddingHorizontal: scale(5),
       borderTopLeftRadius: scale(20),
       borderTopRightRadius: scale(20),
@@ -275,7 +278,7 @@ const createResponsiveStyles = () =>
       shadowRadius: 8,
       elevation: 10,
       position: "absolute",
-      bottom: 0,
+      bottom: insets.bottom,
       left: 0,
       right: 0,
     },
@@ -325,13 +328,17 @@ const createResponsiveStyles = () =>
 
 const HomeScreen = () => {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [pets, setPets] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   // 🔧 CORREÇÃO: currentRoute agora é /homeScreen (não /(tabs))
-  const currentRoute: string = "/homeScreen";
-  const styles = createResponsiveStyles();
+  const currentRoute: string = "homeScreen";
+  const styles = createResponsiveStyles({
+    top: insets.top || 0,
+    bottom: insets.bottom || 0,
+  });
 
   // Carregar perfil e pets do usuário ao montar
   const loadData = async () => {
@@ -380,16 +387,16 @@ const HomeScreen = () => {
   const handleTabPress = (route: string) => {
     console.log("🔗 Navegando para:", route);
 
-    if (route === "/register-pet") {
-      router.push("/register-pet" as never);
-    } else if (route === "/searchScreen") {
-      router.replace("/searchScreen" as never);
-    } else if (route === "/my-profile") {
-      router.replace("/my-profile" as never);
-    } else if (route === "/favorites") {
-      router.replace("/favorites" as never);
-    } else if (route === "/homeScreen") {
-      router.replace("/homeScreen" as never);
+    if (route === "register-pet") {
+      router.push("register-pet" as never);
+    } else if (route === "searchScreen") {
+      router.replace("searchScreen" as never);
+    } else if (route === "my-profile") {
+      router.replace("my-profile" as never);
+    } else if (route === "favorites") {
+      router.replace("favorites" as never);
+    } else if (route === "homeScreen") {
+      router.replace("homeScreen" as never);
     }
   };
 
@@ -516,7 +523,7 @@ const HomeScreen = () => {
       {/* --- CABEÇALHO --- */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => handleTabPress("/my-profile")}
+          onPress={() => handleTabPress("my-profile")}
           style={styles.profileButton}
           activeOpacity={0.7}
         >
@@ -530,7 +537,7 @@ const HomeScreen = () => {
 
         <TouchableOpacity
           style={styles.searchButton}
-          onPress={() => handleTabPress("/searchScreen")}
+          onPress={() => handleTabPress("searchScreen")}
           activeOpacity={0.8}
         >
           <Ionicons
@@ -594,21 +601,21 @@ const HomeScreen = () => {
         <TabItem
           name="home-outline"
           label="Início"
-          route="/homeScreen"
-          isFocused={currentRoute === "/homeScreen"}
+          route="homeScreen"
+          isFocused={currentRoute === "homeScreen"}
         />
 
         <TabItem
           name="search-outline"
           label="Pesquisar"
-          route="/searchScreen"
-          isFocused={currentRoute === "/searchScreen"}
+          route="searchScreen"
+          isFocused={currentRoute === "searchScreen"}
         />
 
         <View style={{ width: scale(70), alignItems: 'center' }}>
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => handleTabPress("/register-pet")}
+            onPress={() => handleTabPress("register-pet")}
             activeOpacity={0.9}
           >
             <Ionicons name="add" size={28} color="#333" />
@@ -618,15 +625,15 @@ const HomeScreen = () => {
         <TabItem
           name="heart-outline"
           label="Favoritos"
-          route="/favorites"
-          isFocused={currentRoute === "/favorites"}
+          route="favorites"
+          isFocused={currentRoute === "favorites"}
         />
 
         <TabItem
           name="person-outline"
           label="Perfil"
-          route="/my-profile"
-          isFocused={currentRoute === "/my-profile"}
+          route="my-profile"
+          isFocused={currentRoute === "my-profile"}
         />
       </View>
     </SafeAreaView>

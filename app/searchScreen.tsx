@@ -7,6 +7,7 @@ import {
     Alert,
     BackHandler,
     FlatList,
+    Platform,
     SafeAreaView,
     ScrollView,
     StatusBar,
@@ -34,7 +35,12 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    padding: scale(15),
+    paddingHorizontal: scale(15),
+    paddingBottom: scale(10),
+    paddingTop:
+      Platform.OS === "android"
+        ? (StatusBar.currentHeight || 0) + scale(10)
+        : scale(10),
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
     backgroundColor: "#fff",
@@ -445,7 +451,7 @@ const SearchScreen = () => {
       addSearchToHistory(searchQuery);
 
       router.push({
-        pathname: "/results",
+        pathname: "results",
         params: {
           searchQuery: searchQuery,
           filters: JSON.stringify(filters),
@@ -473,7 +479,7 @@ const SearchScreen = () => {
   const handleHistoryItemPress = (item: string) => {
     addSearchToHistory(item);
     router.push({
-      pathname: "/results",
+      pathname: "results",
       params: {
         searchQuery: item,
         filters: JSON.stringify(filters),
@@ -484,11 +490,11 @@ const SearchScreen = () => {
 
   // FUNÇÃO DE NAVEGAÇÃO CORRIGIDA
   const handleGoToHome = useCallback(() => {
-    // ⭐ CORREÇÃO PRINCIPAL: Usa router.replace('/homeScreen')
+    // ⭐ CORREÇÃO PRINCIPAL: Usa router.replace('homeScreen')
     // Isso garante que você volte para a rota raiz (Home) da sua Tab Bar
     // e remove a tela de pesquisa da pilha.
     // Se o seu arquivo home for 'index.tsx', mude para router.replace('/');
-    router.replace("/homeScreen");
+    router.replace("homeScreen");
   }, [router]);
 
   // ⭐ NOVA FUNÇÃO: Handle do botão de voltar do sistema

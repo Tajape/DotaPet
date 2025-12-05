@@ -80,6 +80,11 @@ export default function RootLayout() {
                     <Stack.Screen name="register" options={{ headerShown: false }} />
                     <Stack.Screen name="user-profile" options={{ headerShown: false }} />
                     <Stack.Screen name="homeScreen" options={{ headerShown: false }} />
+                    <Stack.Screen name="favorites" options={{ headerShown: false }} />
+                    <Stack.Screen name="my-profile" options={{ headerShown: false }} />
+                    <Stack.Screen name="searchScreen" options={{ headerShown: false }} />
+                    <Stack.Screen name="results" options={{ headerShown: false }} />
+                    <Stack.Screen name="register-pet" options={{ headerShown: false }} />
                     <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
                     <Stack.Screen name="new-password" options={{ headerShown: false }} />
                     <Stack.Screen name="verify-code" options={{ headerShown: false }} />
