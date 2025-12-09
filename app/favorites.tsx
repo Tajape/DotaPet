@@ -2,19 +2,19 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    BackHandler,
-    Image,
-    Platform,
-    RefreshControl,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    useWindowDimensions,
-    View
+  ActivityIndicator,
+  BackHandler,
+  Image,
+  Platform,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -89,7 +89,7 @@ interface Pet {
   name?: string;
   description?: string;
   images?: string[];
-  type?: 'cat' | 'dog';
+  type?: "cat" | "dog";
   breed?: string;
 }
 
@@ -120,7 +120,7 @@ const FavoritesScreen = () => {
       const pets = await getFavoritePets();
       setFavoritePets(pets);
     } catch (error) {
-      console.error('Erro ao carregar favoritos:', error);
+      console.error("Erro ao carregar favoritos:", error);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -179,9 +179,9 @@ const FavoritesScreen = () => {
     try {
       await toggleFavorite(petId);
       // Atualizar a lista removendo o pet desfavoritado
-      setFavoritePets(prev => prev.filter(pet => pet.id !== petId));
+      setFavoritePets((prev) => prev.filter((pet) => pet.id !== petId));
     } catch (error) {
-      console.error('Erro ao remover favorito:', error);
+      console.error("Erro ao remover favorito:", error);
     }
   };
 
@@ -189,25 +189,25 @@ const FavoritesScreen = () => {
     const firstImage =
       Array.isArray(pet.images) &&
       pet.images.length > 0 &&
-      typeof pet.images[0] === 'string'
+      typeof pet.images[0] === "string"
         ? pet.images[0]
-        : 'https://placehold.co/400x300/CCCCCC/999999?text=Sem+Imagem';
+        : "https://placehold.co/400x300/CCCCCC/999999?text=Sem+Imagem";
 
     return (
       <View key={pet.id} style={styles.petCard}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.cardContent}
           onPress={() => router.push(`/pets/${pet.id}` as never)}
         >
-          <Image 
-            source={{ uri: firstImage }} 
+          <Image
+            source={{ uri: firstImage }}
             style={styles.petImage}
             resizeMode="cover"
           />
           <View style={styles.petInfo}>
-            <Text style={styles.petName}>{pet.name || 'Sem Nome'}</Text>
+            <Text style={styles.petName}>{pet.name || "Sem Nome"}</Text>
             <Text style={styles.petBreed} numberOfLines={1}>
-              {pet.breed || 'Raça não informada'}
+              {pet.breed || "Raça não informada"}
             </Text>
             {pet.description && (
               <Text style={styles.petDescription} numberOfLines={2}>
@@ -216,7 +216,7 @@ const FavoritesScreen = () => {
             )}
           </View>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.favoriteButton}
           onPress={() => handleRemoveFavorite(pet.id)}
         >
@@ -266,69 +266,69 @@ const FavoritesScreen = () => {
     <SafeAreaView style={styles.safeArea}>
       {/* Adicionando um container para limitar a largura máxima em telas grandes */}
       <View style={styles.maxWidthContainer}>
-      <Stack.Screen options={screenOptions} />
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <Stack.Screen options={screenOptions} />
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
-      {/* ------------------ 1. CABEÇALHO ------------------ */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={28} color="#333" />
-        </TouchableOpacity>
+        {/* ------------------ 1. CABEÇALHO ------------------ */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={28} color="#333" />
+          </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Favoritos</Text>
-      </View>
+          <Text style={styles.headerTitle}>Favoritos</Text>
+        </View>
 
-      {/* ------------------ 2. CONTEÚDO PRINCIPAL ------------------ */}
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {renderContent()}
-      </ScrollView>
-
-      {/* ------------------ 3. BARRA DE NAVEGAÇÃO INFERIOR ------------------ */}
-      <View style={styles.tabBarContainer}>
-        <TabItem
-          name="home-outline"
-          label="Início"
-          route="homeScreen"
-          isFocused={currentRoute === "homeScreen"}
-          onPress={handleTabPress}
-        />
-        <TabItem
-          name="search-outline"
-          label="Pesquisar"
-          route="searchScreen"
-          isFocused={currentRoute === "searchScreen"}
-          onPress={handleTabPress}
-        />
-
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => handleTabPress("register-pet")}
+        {/* ------------------ 2. CONTEÚDO PRINCIPAL ------------------ */}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         >
-          <Ionicons name="add" size={32} color="#333" />
-        </TouchableOpacity>
+          {renderContent()}
+        </ScrollView>
 
-        <TabItem
-          name="heart-outline"
-          label="Favoritos"
-          route="favorites"
-          isFocused={currentRoute === "favorites"}
-          onPress={handleTabPress}
-        />
+        {/* ------------------ 3. BARRA DE NAVEGAÇÃO INFERIOR ------------------ */}
+        <View style={styles.tabBarContainer}>
+          <TabItem
+            name="home-outline"
+            label="Início"
+            route="homeScreen"
+            isFocused={currentRoute === "homeScreen"}
+            onPress={handleTabPress}
+          />
+          <TabItem
+            name="search-outline"
+            label="Pesquisar"
+            route="searchScreen"
+            isFocused={currentRoute === "searchScreen"}
+            onPress={handleTabPress}
+          />
 
-        <TabItem
-          name="person-outline"
-          label="Perfil"
-          route="my-profile"
-          isFocused={currentRoute === "my-profile"}
-          onPress={handleTabPress}
-        />
-      </View>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => router.push("/register-pet" as never)}
+          >
+            <Ionicons name="add" size={32} color="#333" />
+          </TouchableOpacity>
+
+          <TabItem
+            name="heart-outline"
+            label="Favoritos"
+            route="favorites"
+            isFocused={currentRoute === "favorites"}
+            onPress={handleTabPress}
+          />
+
+          <TabItem
+            name="person-outline"
+            label="Perfil"
+            route="my-profile"
+            isFocused={currentRoute === "my-profile"}
+            onPress={handleTabPress}
+          />
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -344,80 +344,80 @@ const getStyles = (
   bottomInset: number
 ) => {
   const basePadding = isLargeScreen ? 30 : 15;
-  const cardWidth = isLargeScreen ? '48%' : '100%';
-  const cardMargin = isLargeScreen ? '1%' : 0;
+  const cardWidth = isLargeScreen ? "48%" : "100%";
+  const cardMargin = isLargeScreen ? "1%" : 0;
 
   return StyleSheet.create({
     loadingContainer: {
       flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: "center",
+      alignItems: "center",
       padding: 20,
     },
     petsContainer: {
-      flexDirection: isLargeScreen ? 'row' : 'column',
-      flexWrap: isLargeScreen ? 'wrap' : 'nowrap',
-      width: '100%',
+      flexDirection: isLargeScreen ? "row" : "column",
+      flexWrap: isLargeScreen ? "wrap" : "nowrap",
+      width: "100%",
       paddingHorizontal: responsiveSize(8),
-      paddingBottom: responsiveSize(100) + bottomInset, // Espaço para a tab bar + área segura
-      justifyContent: isLargeScreen ? 'space-between' : 'flex-start',
+      paddingBottom: responsiveSize(80) + bottomInset, // alinhado com homeScreen
+      justifyContent: isLargeScreen ? "space-between" : "flex-start",
     },
     petCard: {
-      flexDirection: isLargeScreen ? 'column' : 'row',
-      backgroundColor: '#fff',
+      flexDirection: isLargeScreen ? "column" : "row",
+      backgroundColor: "#fff",
       borderRadius: responsiveSize(12),
       marginBottom: responsiveSize(15),
-      shadowColor: '#000',
+      shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 4,
       elevation: 3,
-      overflow: 'hidden',
+      overflow: "hidden",
       width: cardWidth,
       marginHorizontal: cardMargin,
-      maxWidth: isLargeScreen ? 300 : '100%',
+      maxWidth: isLargeScreen ? 300 : "100%",
     },
     cardContent: {
       flex: 1,
-      flexDirection: isLargeScreen ? 'column' : 'row',
+      flexDirection: isLargeScreen ? "column" : "row",
     },
     petImage: {
-      width: isLargeScreen ? '100%' : responsiveSize(120),
+      width: isLargeScreen ? "100%" : responsiveSize(120),
       height: isLargeScreen ? responsiveSize(180) : responsiveSize(120),
-      backgroundColor: '#f0f0f0',
+      backgroundColor: "#f0f0f0",
       minHeight: isLargeScreen ? responsiveSize(180) : responsiveSize(120),
     },
     petInfo: {
       flex: 1,
       padding: responsiveSize(12),
-      justifyContent: 'center',
+      justifyContent: "center",
     },
     petName: {
       fontSize: responsiveSize(18),
-      fontWeight: 'bold',
-      color: '#333',
+      fontWeight: "bold",
+      color: "#333",
     },
     petBreed: {
       fontSize: responsiveSize(14),
-      color: '#666',
+      color: "#666",
       marginBottom: responsiveSize(6),
     },
     petDescription: {
       fontSize: responsiveSize(13),
-      color: '#777',
+      color: "#777",
       lineHeight: responsiveSize(18),
     },
     favoriteButton: {
-      position: 'absolute',
+      position: "absolute",
       top: responsiveSize(10),
       right: responsiveSize(10),
-      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+      backgroundColor: "rgba(255, 255, 255, 0.9)",
       borderRadius: responsiveSize(20),
       width: responsiveSize(40),
       height: responsiveSize(40),
-      justifyContent: 'center',
-      alignItems: 'center',
-      shadowColor: '#000',
+      justifyContent: "center",
+      alignItems: "center",
+      shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.2,
       shadowRadius: 4,
@@ -430,17 +430,17 @@ const getStyles = (
     },
     maxWidthContainer: {
       flex: 1,
-      width: '100%',
+      width: "100%",
       maxWidth: 1200, // Aumentado para telas maiores
-      alignSelf: 'center',
+      alignSelf: "center",
     },
     // Garante que o scroll content ocupe o espaço para centralizar o estado vazio
     scrollContent: {
       flexGrow: 1,
       paddingHorizontal: responsiveSize(12),
-      paddingBottom: responsiveSize(100) + bottomInset, // Espaço para a tab bar + área segura
-      width: '100%',
-      maxWidth: '100%',
+      paddingBottom: responsiveSize(80) + bottomInset, // alinhado com homeScreen
+      width: "100%",
+      maxWidth: "100%",
     },
 
     // --- 1. Cabeçalho Personalizado ---
@@ -453,7 +453,9 @@ const getStyles = (
       borderBottomWidth: 1,
       borderBottomColor: "#eee",
       paddingTop:
-        Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 5 : responsiveSize(15),
+        Platform.OS === "android"
+          ? (StatusBar.currentHeight || 0) + 5
+          : responsiveSize(15),
     },
     backButton: {
       padding: responsiveSize(5),
@@ -473,9 +475,9 @@ const getStyles = (
       textAlign: "center",
       paddingVertical: responsiveSize(40),
       paddingHorizontal: responsiveSize(20),
-      width: '100%',
+      width: "100%",
       maxWidth: 500,
-      alignSelf: 'center',
+      alignSelf: "center",
     },
     emptyText: {
       fontSize: responsiveSize(18),
@@ -504,23 +506,29 @@ const getStyles = (
     tabBarContainer: {
       flexDirection: "row",
       justifyContent: "space-around",
-      alignItems: "center",
+      alignItems: "flex-start",
       backgroundColor: "#FFC837",
       height: responsiveSize(75),
-      paddingHorizontal: responsiveSize(5),
+      paddingHorizontal: 0, // 👈 ZERADO PARA OCUPAR LARGURA TOTAL
       paddingTop: responsiveSize(8),
-      paddingBottom: bottomInset,
-      borderTopLeftRadius: responsiveSize(20),
-      borderTopRightRadius: responsiveSize(20),
+      borderTopLeftRadius: responsiveSize(30),
+      borderTopRightRadius: responsiveSize(30),
       shadowColor: "#000",
-      shadowOffset: { width: 0, height: -2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 8,
+      shadowOffset: { width: 0, height: -responsiveSize(5) },
+      shadowOpacity: 0.15,
+      shadowRadius: responsiveSize(10),
+      elevation: 10,
       position: "absolute",
       bottom: 0,
       left: 0,
       right: 0,
+    },
+    tabItem: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: responsiveSize(5),
+      paddingHorizontal: responsiveSize(2), // 👈 PEQUENO ESPAÇO INTERNO
     },
     tabLabel: {
       fontSize: responsiveSize(11),
@@ -530,7 +538,7 @@ const getStyles = (
     },
     tabLabelFocused: {
       color: "#333",
-      fontWeight: "700"
+      fontWeight: "700",
     },
     addButton: {
       backgroundColor: "#fff",
@@ -547,9 +555,8 @@ const getStyles = (
       shadowOpacity: 0.3,
       shadowRadius: 3,
       elevation: 6,
-    }
+    },
   });
 };
 
 export default FavoritesScreen;
-

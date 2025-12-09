@@ -2,17 +2,18 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
-    Alert,
-    BackHandler,
-    Image,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  BackHandler,
+  Dimensions,
+  Image,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getDocument } from "../firebase";
@@ -215,7 +216,10 @@ const MyProfileScreen = () => {
 
       {/* ------------------ 2. CONTEÚDO PRINCIPAL ------------------ */}
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: verticalScale(80) + insets.bottom },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* Informações do Usuário */}
@@ -248,7 +252,7 @@ const MyProfileScreen = () => {
           {/* ✅ BOTÃO: MINHAS CANDIDATURAS (Ícone Patinha) */}
           <OptionButton
             icon="paw-outline" // Ícone de pata
-            label="Minhas Candidaturas"
+            label="Meus Pets Candidatos"
             onPress={handleApplicationsPress}
           />
 
@@ -269,7 +273,7 @@ const MyProfileScreen = () => {
       </ScrollView>
 
       {/* ------------------ 3. BARRA DE NAVEGAÇÃO INFERIOR ------------------ */}
-      <View style={[styles.tabBarContainer, { bottom: insets.bottom }]}>
+      <View style={[styles.tabBarContainer, { paddingBottom: insets.bottom }]}>
         <TabItem
           name="home-outline"
           label="Início"
@@ -287,7 +291,7 @@ const MyProfileScreen = () => {
 
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => handleTabPress("register-pet")}
+          onPress={() => router.push("/register-pet" as never)}
         >
           <Ionicons name="add" size={32} color="#333" />
         </TouchableOpacity>
@@ -316,15 +320,27 @@ const MyProfileScreen = () => {
 // ESTILIZAÇÃO (NÃO ALTERADA)
 // =========================================================================
 
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const scale = (size: number) => (SCREEN_WIDTH / 375) * size;
+const verticalScale = (size: number) => (SCREEN_HEIGHT / 667) * size;
+const moderateScale = (size: number, factor = 0.5) =>
+  size + (scale(size) - size) * factor;
+
 const styles = StyleSheet.create({
+  fullWidthTabWrapper: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+  },
   // --- Estrutura Básica ---
   safeArea: {
     flex: 1,
     backgroundColor: "#fff",
   },
   scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 100 + (StatusBar.currentHeight || 0),
+    paddingBottom: verticalScale(80) + (Platform.OS === "ios" ? 20 : 0),
   },
 
   // --- 1. Cabeçalho Personalizado ---
@@ -414,17 +430,17 @@ const styles = StyleSheet.create({
   tabBarContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
-    alignItems: "center",
+    alignItems: "flex-start",
     backgroundColor: "#FFC837",
-    height: 75,
-    paddingHorizontal: 5,
-    paddingTop: 8,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    height: verticalScale(75),
+    paddingHorizontal: 0, // 👈 ZERADO PARA OCUPAR LARGURA TOTAL
+    paddingTop: verticalScale(8),
+    borderTopLeftRadius: scale(30),
+    borderTopRightRadius: scale(30),
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: -verticalScale(5) },
+    shadowOpacity: 0.15,
+    shadowRadius: scale(10),
     elevation: 10,
     position: "absolute",
     bottom: 0,
@@ -435,7 +451,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 5,
+    paddingVertical: verticalScale(5),
+    paddingHorizontal: scale(2), // 👈 PEQUENO ESPAÇO INTERNO
   },
   tabLabel: {
     fontSize: 11,
@@ -449,18 +466,18 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: "#fff",
-    width: 65,
-    height: 65,
-    borderRadius: 35,
+    width: scale(60),
+    height: scale(60),
+    borderRadius: scale(30),
     justifyContent: "center",
     alignItems: "center",
-    marginTop: -30,
-    borderWidth: 5,
+    marginTop: -verticalScale(25),
+    borderWidth: scale(4),
     borderColor: "#FFC837",
     shadowColor: "#333",
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: verticalScale(3) },
     shadowOpacity: 0.4,
-    shadowRadius: 4,
+    shadowRadius: scale(4),
     elevation: 8,
   },
 });

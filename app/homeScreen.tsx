@@ -2,6 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  Dimensions,
   Image,
   Platform,
   RefreshControl,
@@ -13,11 +14,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getDocument, queryDocuments } from "../firebase";
 import { getCurrentUser } from "../services/authService";
-import { isPetFavorited, toggleFavorite } from "../services/favoritesService";
-import { ms as moderateScale, hs as scale, vs as verticalScale } from "./utils/responsive";
 
 // Definição de tipos para as props do componente TabItem
 interface TabItemProps {
@@ -44,18 +42,24 @@ interface UserProfile {
   profileImage?: string | null;
 }
 
-// Estilos
-const createResponsiveStyles = (insets: { top: number; bottom: number }) =>
+// Função para calcular dimensões responsivas
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const scale = (size: number) => (SCREEN_WIDTH / 375) * size;
+const verticalScale = (size: number) => (SCREEN_HEIGHT / 667) * size;
+const moderateScale = (size: number, factor = 0.5) =>
+  size + (scale(size) - size) * factor;
+
+// Estilos (COM AJUSTES FINAIS DE LARGURA TOTAL)
+const createResponsiveStyles = () =>
   StyleSheet.create({
     // --- Estrutura Básica ---
     safeArea: {
       flex: 1,
       backgroundColor: "#fff",
     },
+    // O paddingBottom garante que o último conteúdo não fique atrás da nav bar
     scrollContent: {
-      paddingBottom:
-        verticalScale(80) +
-        (Platform.OS === "ios" ? Math.max(insets.bottom, 20) : insets.bottom),
+      paddingBottom: verticalScale(80) + (Platform.OS === "ios" ? 20 : 0),
     },
     mainContent: {
       paddingHorizontal: scale(16),
@@ -92,34 +96,23 @@ const createResponsiveStyles = (insets: { top: number; bottom: number }) =>
       flex: 1,
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: "#F5F5F5",
-      borderRadius: scale(10),
-      height: verticalScale(40),
+      backgroundColor: "#F3F3F3",
+      borderRadius: scale(30),
+      height: verticalScale(48),
       paddingHorizontal: scale(15),
-      marginHorizontal: scale(16),
-      marginVertical: scale(8),
+      borderWidth: 1,
+      borderColor: "#E0E0E0",
     },
     searchIcon: {
       marginRight: scale(8),
-      color: "#666",
     },
     searchPlaceholder: {
       fontSize: moderateScale(14),
-      color: "#999",
+      color: "#888",
       flexShrink: 1,
-      fontFamily: 'System',
     },
 
-    // --- Título de Seção ---
-    sectionTitle: {
-      fontSize: moderateScale(20),
-      fontWeight: "700",
-      color: "#333",
-      marginTop: verticalScale(25),
-      marginBottom: verticalScale(15),
-    },
-
-    // --- Placeholder Card (Revertido) ---
+    // --- Conteúdo Geral (Cards e Placeholder) ---
     placeholderCardContainer: {
       backgroundColor: "#FFFBEA",
       borderWidth: 2,
@@ -144,58 +137,6 @@ const createResponsiveStyles = (insets: { top: number; bottom: number }) =>
       color: "#666",
       textAlign: "center",
     },
-    // --- Card de Pet ---
-    petCard: {
-      backgroundColor: "#fff",
-      borderRadius: scale(15),
-      marginBottom: scale(16),
-      overflow: "hidden",
-      marginHorizontal: scale(16),
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
-    },
-    petImage: {
-      width: "100%",
-      height: verticalScale(180),
-      backgroundColor: "#F0F0F0",
-    },
-    petInfo: {
-      padding: scale(12),
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    petTextContainer: {
-      flex: 1,
-    },
-    petName: {
-      fontSize: moderateScale(16),
-      fontWeight: "700",
-      color: "#333",
-      marginBottom: scale(2),
-    },
-    petDetails: {
-      fontSize: moderateScale(12),
-      color: "#666",
-      marginBottom: 0,
-    },
-    petAgeBadge: {
-      backgroundColor: "#fff",
-      borderRadius: scale(12),
-      paddingHorizontal: scale(10),
-      paddingVertical: scale(4),
-      borderWidth: 1,
-      borderColor: "#E0E0E0",
-      marginLeft: scale(8),
-    },
-    petAgeText: {
-      fontSize: moderateScale(12),
-      fontWeight: "700",
-      color: "#666",
-    },
-    // --- Novo estilo para cards (estilo semelhante ao anexo)
     cardWrapper: {
       marginBottom: verticalScale(16),
     },
@@ -262,23 +203,25 @@ const createResponsiveStyles = (insets: { top: number; bottom: number }) =>
       alignItems: "center",
       zIndex: 10,
     },
-    // --- Bottom Tab Bar ---
+
+    // --- BARRA DE NAVEGAÇÃO (NAV BAR) ---
     tabBarContainer: {
       flexDirection: "row",
       justifyContent: "space-around",
-      alignItems: "center",
+      alignItems: "flex-start",
       backgroundColor: "#FFC837",
       height: verticalScale(75),
-      paddingHorizontal: scale(5),
-      borderTopLeftRadius: scale(20),
-      borderTopRightRadius: scale(20),
+      paddingHorizontal: 0, // 👈 MANTIDO ZERADO
+      paddingTop: verticalScale(8),
+      borderTopLeftRadius: scale(30),
+      borderTopRightRadius: scale(30),
       shadowColor: "#000",
-      shadowOffset: { width: 0, height: -2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
+      shadowOffset: { width: 0, height: -scale(5) },
+      shadowOpacity: 0.15,
+      shadowRadius: scale(10),
       elevation: 10,
       position: "absolute",
-      bottom: insets.bottom,
+      bottom: 0,
       left: 0,
       right: 0,
     },
@@ -286,11 +229,8 @@ const createResponsiveStyles = (insets: { top: number; bottom: number }) =>
       flex: 1,
       alignItems: "center",
       justifyContent: "center",
-      paddingVertical: verticalScale(8),
-      height: "100%",
-    },
-    tabIcon: {
-      marginBottom: scale(4),
+      paddingVertical: verticalScale(5),
+      paddingHorizontal: scale(2), // 👈 ADICIONADO UM PEQUENO ESPAÇO INTERNO PARA OS ÍCONES
     },
     tabLabel: {
       fontSize: moderateScale(10),
@@ -299,26 +239,26 @@ const createResponsiveStyles = (insets: { top: number; bottom: number }) =>
       marginTop: verticalScale(2),
     },
     tabLabelFocused: {
-      color: "#000",
+      color: "#333",
       fontWeight: "700",
     },
 
     // --- Botão Central de Adicionar ---
     addButton: {
       backgroundColor: "#fff",
-      width: scale(56),
-      height: scale(56),
-      borderRadius: scale(28),
+      width: scale(60),
+      height: scale(60),
+      borderRadius: scale(30),
       justifyContent: "center",
       alignItems: "center",
-      marginTop: -verticalScale(20),
-      borderWidth: scale(3),
+      marginTop: -verticalScale(25),
+      borderWidth: scale(4),
       borderColor: "#FFC837",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
-      elevation: 6,
+      shadowColor: "#333",
+      shadowOffset: { width: 0, height: scale(3) },
+      shadowOpacity: 0.4,
+      shadowRadius: scale(4),
+      elevation: 8,
     },
   });
 
@@ -328,17 +268,12 @@ const createResponsiveStyles = (insets: { top: number; bottom: number }) =>
 
 const HomeScreen = () => {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const [pets, setPets] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  // 🔧 CORREÇÃO: currentRoute agora é /homeScreen (não /(tabs))
-  const currentRoute: string = "homeScreen";
-  const styles = createResponsiveStyles({
-    top: insets.top || 0,
-    bottom: insets.bottom || 0,
-  });
+  const currentRoute: string = "/homeScreen";
+  const styles = createResponsiveStyles();
 
   // Carregar perfil e pets do usuário ao montar
   const loadData = async () => {
@@ -346,25 +281,16 @@ const HomeScreen = () => {
     try {
       const user = getCurrentUser();
       if (!user) {
-        console.log("❌ Usuário não autenticado");
         return;
       }
 
-      // 🔧 ADICIONAR LOG
-      console.log("📱 Carregando dados do usuário:", user.uid);
-
-      // Carregar perfil salvo no Firestore
       const profile = await getDocument("users", user.uid);
       if (profile) {
-        console.log("✅ Perfil carregado:", profile);
         setUserProfile(profile as UserProfile);
-      } else {
-        console.warn("⚠️ Perfil não encontrado");
       }
 
-      // Carregar TODOS os pets de todos os usuários
+      // TODO: Adicionar filtro por pets disponíveis ou próximos aqui, se necessário.
       const allPets = await queryDocuments("pets", []);
-      console.log("✅ Pets carregados:", allPets.length);
       setPets(allPets);
     } catch (error) {
       console.error("❌ Erro ao carregar dados:", error);
@@ -383,29 +309,27 @@ const HomeScreen = () => {
     loadData();
   }, []);
 
-  // --- Funções de Navegação ---
+  // --- Funções de Navegação (ROTAS COM /) ---
   const handleTabPress = (route: string) => {
-    console.log("🔗 Navegando para:", route);
+    // A rota "/register-pet" será tratada diretamente no botão,
+    // mas mantemos a lógica da Tab Bar com replace.
 
-    if (route === "register-pet") {
-      router.push("register-pet" as never);
-    } else if (route === "searchScreen") {
-      router.replace("searchScreen" as never);
-    } else if (route === "my-profile") {
-      router.replace("my-profile" as never);
-    } else if (route === "favorites") {
-      router.replace("favorites" as never);
-    } else if (route === "homeScreen") {
-      router.replace("homeScreen" as never);
+    // Apenas as rotas da Tab Bar (que usam replace) são tratadas aqui
+    if (route === "/searchScreen") {
+      router.replace("/searchScreen" as never);
+    } else if (route === "/my-profile") {
+      router.replace("/my-profile" as never);
+    } else if (route === "/favorites") {
+      router.replace("/favorites" as never);
+    } else if (route === "/homeScreen") {
+      router.replace("/homeScreen" as never);
     }
   };
 
   // Componente para renderizar cada card de pet
   const PetCard = ({ pet, index }: { pet: any; index: number }) => {
     const [isFavorite, setIsFavorite] = useState(false);
-    const [isToggling, setIsToggling] = useState(false);
 
-    // 🔧 GARANTIR QUE firstImage É STRING
     const firstImage =
       Array.isArray(pet.images) &&
       pet.images.length > 0 &&
@@ -415,41 +339,16 @@ const HomeScreen = () => {
         ? pet.image
         : MOCK_USER_PROFILE.imageUri;
 
-    React.useEffect(() => {
-      const loadFavoriteState = async () => {
-        try {
-          if (!pet.id) return;
-          const favorited = await isPetFavorited(pet.id);
-          setIsFavorite(favorited);
-        } catch (error) {
-          console.error("Erro ao verificar favorito:", error);
-        }
-      };
-
-      loadFavoriteState();
-    }, [pet.id]);
-
-    const handleToggleFavorite = async (e: any) => {
+    const toggleFavorite = (e: any) => {
       e.stopPropagation();
-
-      if (!pet.id || isToggling) return;
-
-      try {
-        setIsToggling(true);
-        const favorited = await toggleFavorite(pet.id);
-        setIsFavorite(favorited);
-      } catch (error) {
-        console.error("Erro ao alternar favorito:", error);
-      } finally {
-        setIsToggling(false);
-      }
+      setIsFavorite(!isFavorite);
     };
 
     return (
       <TouchableOpacity
         style={styles.cardWrapper}
         onPress={() => {
-          console.log("🔗 Abrindo pet:", pet.id);
+          // Rota para a tela de detalhes do pet
           router.push(`/pets/${pet.id}` as never);
         }}
       >
@@ -458,9 +357,8 @@ const HomeScreen = () => {
 
           <TouchableOpacity
             style={styles.favoriteButton}
-            onPress={handleToggleFavorite}
+            onPress={toggleFavorite}
             activeOpacity={0.8}
-            disabled={isToggling}
           >
             <Ionicons
               name={isFavorite ? "heart" : "heart-outline"}
@@ -486,32 +384,32 @@ const HomeScreen = () => {
   };
 
   // --- Componente TabItem ---
-  const TabItem = ({ name, label, route, isFocused }: TabItemProps) => {
-    return (
-      <TouchableOpacity
-        style={styles.tabItem}
-        onPress={() => handleTabPress(route)}
-        activeOpacity={0.7}
-        disabled={isFocused}
-      >
-        <Ionicons
-          name={name as any}
-          size={24}
-          color={isFocused ? "#000" : "#666"}
-          style={styles.tabIcon}
-        />
-        <Text
-          style={[
-            styles.tabLabel,
-            isFocused && styles.tabLabelFocused,
-          ]}
-          numberOfLines={1}
-        >
-          {label}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
+  const TabItem: React.FC<TabItemProps> = ({
+    name,
+    label,
+    route,
+    isFocused,
+  }) => (
+    <TouchableOpacity
+      key={route}
+      style={styles.tabItem}
+      onPress={() => handleTabPress(route)}
+      disabled={isFocused}
+    >
+      <Ionicons
+        name={
+          isFocused
+            ? (name.replace("-outline", "") as "home")
+            : (name as "home-outline")
+        }
+        size={24}
+        color={isFocused ? "#333" : "#666"}
+      />
+      <Text style={[styles.tabLabel, isFocused && styles.tabLabelFocused]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -523,7 +421,7 @@ const HomeScreen = () => {
       {/* --- CABEÇALHO --- */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => handleTabPress("my-profile")}
+          onPress={() => handleTabPress("/my-profile")}
           style={styles.profileButton}
           activeOpacity={0.7}
         >
@@ -537,7 +435,7 @@ const HomeScreen = () => {
 
         <TouchableOpacity
           style={styles.searchButton}
-          onPress={() => handleTabPress("searchScreen")}
+          onPress={() => handleTabPress("/searchScreen")}
           activeOpacity={0.8}
         >
           <Ionicons
@@ -560,7 +458,7 @@ const HomeScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <View style={[styles.mainContent, { marginTop: verticalScale(15) }]}> 
+        <View style={[styles.mainContent, { marginTop: 15 }]}>
           {isLoading ? (
             <View style={styles.placeholderCardContainer}>
               <Ionicons
@@ -592,48 +490,47 @@ const HomeScreen = () => {
             </View>
           )}
 
-          <View style={{ height: verticalScale(50) }} />
+          <View style={{ height: 50 }} />
         </View>
       </ScrollView>
 
-      {/* --- BARRA DE NAVEGAÇÃO --- */}
+      {/* --- BARRA DE NAVEGAÇÃO (AJUSTADA) --- */}
       <View style={styles.tabBarContainer}>
         <TabItem
           name="home-outline"
           label="Início"
-          route="homeScreen"
-          isFocused={currentRoute === "homeScreen"}
+          route="/homeScreen"
+          isFocused={currentRoute === "/homeScreen"}
         />
 
         <TabItem
           name="search-outline"
           label="Pesquisar"
-          route="searchScreen"
-          isFocused={currentRoute === "searchScreen"}
+          route="/searchScreen"
+          isFocused={currentRoute === "/searchScreen"}
         />
 
-        <View style={{ width: scale(70), alignItems: 'center' }}>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => handleTabPress("register-pet")}
-            activeOpacity={0.9}
-          >
-            <Ionicons name="add" size={28} color="#333" />
-          </TouchableOpacity>
-        </View>
+        {/* 🚀 CORREÇÃO APLICADA AQUI: Usando router.push() diretamente no botão. */}
+        <TouchableOpacity
+          style={styles.addButton}
+          // Usamos 'as any' para forçar o roteamento e contornar a tipagem restritiva do Expo Router
+          onPress={() => router.push("/register-pet" as any)} 
+        >
+          <Ionicons name="add" size={32} color="#333" />
+        </TouchableOpacity>
 
         <TabItem
           name="heart-outline"
           label="Favoritos"
-          route="favorites"
-          isFocused={currentRoute === "favorites"}
+          route="/favorites"
+          isFocused={currentRoute === "/favorites"}
         />
 
         <TabItem
           name="person-outline"
           label="Perfil"
-          route="my-profile"
-          isFocused={currentRoute === "my-profile"}
+          route="/my-profile"
+          isFocused={currentRoute === "/my-profile"}
         />
       </View>
     </SafeAreaView>

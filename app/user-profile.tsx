@@ -3,19 +3,19 @@ import * as ImagePicker from "expo-image-picker";
 import { Stack, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { getDocument, updateDocument, uploadFile } from "../firebase";
 import { getCurrentUser } from "../services/authService";
@@ -23,6 +23,20 @@ import { getCurrentUser } from "../services/authService";
 // =========================================================================
 // 1. COMPONENTE PRINCIPAL (UserProfileScreen)
 // =========================================================================
+
+const formatPhoneNumber = (text: string): string => {
+  // Remove tudo que não é número
+  const cleaned = text.replace(/\D/g, '');
+  
+  // Limita a 11 dígitos (2 DDD + 9 dígitos)
+  const limited = cleaned.slice(0, 11);
+  
+  // Formata: (XX) 9XXXX-XXXX
+  if (limited.length === 0) return '';
+  if (limited.length <= 2) return `(${limited}`;
+  if (limited.length <= 7) return `(${limited.slice(0, 2)}) ${limited.slice(2)}`;
+  return `(${limited.slice(0, 2)}) ${limited.slice(2, 7)}-${limited.slice(7)}`;
+};
 
 const UserProfileScreen = () => {
   const [username, setUsername] = useState<string>("");
@@ -246,14 +260,15 @@ const UserProfileScreen = () => {
             />
 
             {/* Input: Telefone(Whatsapp) */}
-            <Text style={styles.label}>Telefone(Whatsapp)</Text>
+            <Text style={styles.label}>Telefone (WhatsApp)</Text>
             <TextInput
               style={styles.input}
-              placeholder="insira aqui seu número para contato"
+              placeholder="(11) 9XXXX-XXXX"
               placeholderTextColor="#999"
               value={phone}
-              onChangeText={setPhone}
+              onChangeText={(text) => setPhone(formatPhoneNumber(text))}
               keyboardType="phone-pad"
+              maxLength={15} // (XX) 9XXXX-XXXX = 15 caracteres
               returnKeyType="next"
             />
 

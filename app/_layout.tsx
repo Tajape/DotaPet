@@ -22,17 +22,18 @@ export default function RootLayout() {
             width: '100%',
             maxWidth: 1280,
             marginHorizontal: 'auto',
+            // 💡 AJUSTE 1: Removendo o padding padrão aqui para que a função o defina
+            paddingHorizontal: 0, 
+        },
+        // 🚀 AJUSTE 2: Definindo paddingHorizontal como ZERO para telas pequenas (Mobile)
+        smallScreen: { 
+            paddingHorizontal: 0, 
+        },
+        // Estilos para telas médias (mantendo o padding para web/desktop)
+        mediumScreen: { 
             paddingHorizontal: 16,
         },
-        // Estilos para telas pequenas
-        smallScreen: {
-            paddingHorizontal: 12,
-        },
-        // Estilos para telas médias
-        mediumScreen: {
-            paddingHorizontal: 16,
-        },
-        // Estilos para telas grandes
+        // Estilos para telas grandes (mantendo o padding para web/desktop)
         largeScreen: {
             paddingHorizontal: 24,
         },
@@ -40,9 +41,12 @@ export default function RootLayout() {
 
     // Função auxiliar para determinar o tamanho da tela
     const getContentContainerStyle = (width: number) => {
+        // Para telas menores que 640px (smartphones), aplicamos o padding ZERO
         if (width < 640) {
             return [styles.contentContainer, styles.smallScreen];
-        } else if (width < 1024) {
+        } 
+        // Para telas maiores, mantemos a lógica original de padding
+        else if (width < 1024) {
             return [styles.contentContainer, styles.mediumScreen];
         } else {
             return [styles.contentContainer, styles.largeScreen];
@@ -53,13 +57,14 @@ export default function RootLayout() {
     if (isLoading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#0a7ea4" />
+                <ActivityIndicator size="large" color="#FFC837" />
             </View>
         );
     }
 
     return (
         <View style={styles.container}>
+            {/* 💡 A View abaixo recebe o estilo que remove o padding horizontal se for tela pequena */}
             <View style={getContentContainerStyle(width)}>
                 <Stack>
                     {/* O Stack.Screen usa o nome do arquivo (sem a extensão .tsx) */}

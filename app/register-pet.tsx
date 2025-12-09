@@ -3,24 +3,20 @@ import * as ImagePicker from "expo-image-picker";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Image,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import {
-    addDocument,
-    getDocument,
-    updateDocument
-} from "../firebase";
+import { addDocument, getDocument, updateDocument } from "../firebase";
 import { getCurrentUser } from "../services/authService";
 import { uploadPetImage } from "../services/supabaseStorage";
 
@@ -109,26 +105,30 @@ const RegisterPetScreen = () => {
       if (petId && typeof petId === "string") {
         try {
           setIsLoading(true);
-          const petData = await getDocument("pets", petId) as PetData;
+          const petData = (await getDocument("pets", petId)) as PetData;
 
           if (petData) {
             setIsEditing(true);
-            setName(petData.name || '');
-            setColor(petData.color || '');
-            setBreed(petData.breed || '');
-            setDescription(petData.description || '');
+            setName(petData.name || "");
+            setColor(petData.color || "");
+            setBreed(petData.breed || "");
+            setDescription(petData.description || "");
             setGender(petData.gender || null);
             setSize(petData.size || null);
             setIsVaccinated(petData.isVaccinated || false);
             setIsNeutered(petData.isNeutered || false);
-            setSelectedImages(Array.isArray(petData.images) ? petData.images : []);
+            setSelectedImages(
+              Array.isArray(petData.images) ? petData.images : []
+            );
 
             // Converte a idade de volta para os campos de número e unidade
             if (petData.age) {
               const ageMatch = String(petData.age).match(/(\d+)\s*(ano|mês)/i);
               if (ageMatch) {
                 setAgeNumber(ageMatch[1]);
-                setAgeUnit(ageMatch[2].toLowerCase().includes('ano') ? 'anos' : 'meses');
+                setAgeUnit(
+                  ageMatch[2].toLowerCase().includes("ano") ? "anos" : "meses"
+                );
               }
             }
           }
@@ -179,25 +179,31 @@ const RegisterPetScreen = () => {
 
       for (let index = 0; index < selectedImages.length; index++) {
         let uri = selectedImages[index];
-        console.log(`Processando imagem ${index + 1} de ${selectedImages.length}:`, uri);
+        console.log(
+          `Processando imagem ${index + 1} de ${selectedImages.length}:`,
+          uri
+        );
 
         // Se já for uma URL (edição de pet com imagens existentes), reutiliza
-        if (typeof uri === 'string' && (uri.startsWith("http://") || uri.startsWith("https://"))) {
-          console.log('Imagem já é uma URL, reutilizando:', uri);
+        if (
+          typeof uri === "string" &&
+          (uri.startsWith("http://") || uri.startsWith("https://"))
+        ) {
+          console.log("Imagem já é uma URL, reutilizando:", uri);
           imageUrls.push(uri);
           continue;
         }
 
         // Se não for uma string ou estiver vazia, pula
-        if (typeof uri !== 'string' || !uri.trim()) {
-          console.warn('URI de imagem inválida, pulando:', uri);
+        if (typeof uri !== "string" || !uri.trim()) {
+          console.warn("URI de imagem inválida, pulando:", uri);
           continue;
         }
 
         try {
-          console.log('Enviando imagem para Supabase Storage...');
+          console.log("Enviando imagem para Supabase Storage...");
           const publicUrl = await uploadPetImage(uri, user.uid);
-          console.log('Imagem enviada com sucesso. URL pública:', publicUrl);
+          console.log("Imagem enviada com sucesso. URL pública:", publicUrl);
           imageUrls.push(publicUrl);
         } catch (error) {
           console.error("Erro ao fazer upload da imagem para Supabase:", error);
@@ -621,7 +627,7 @@ const RegisterPetScreen = () => {
               <ActivityIndicator color="#5a5a5aff" />
             ) : (
               <Text style={[styles.submitButtonText, { color: "#5a5a5aff" }]}>
-                {isEditing ? 'Salvar' : 'Cadastrar'}
+                {isEditing ? "Salvar" : "Cadastrar"}
               </Text>
             )}
           </TouchableOpacity>
