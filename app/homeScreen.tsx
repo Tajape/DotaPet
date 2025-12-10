@@ -17,6 +17,12 @@ import {
 import { getDocument, queryDocuments } from "../firebase";
 import { getCurrentUser } from "../services/authService";
 
+// ⭐️ NOVO: Importa a função do serviço de favoritos
+import {
+  isPetFavorited,
+  toggleFavorite as toggleFavoriteService,
+} from "../services/favoritesService";
+
 // Definição de tipos para as props do componente TabItem
 interface TabItemProps {
   name: string;
@@ -49,7 +55,7 @@ const verticalScale = (size: number) => (SCREEN_HEIGHT / 667) * size;
 const moderateScale = (size: number, factor = 0.5) =>
   size + (scale(size) - size) * factor;
 
-// Estilos (COM AJUSTES FINAIS DE LARGURA TOTAL)
+// Estilos (MANTIDOS IGUAIS)
 const createResponsiveStyles = () =>
   StyleSheet.create({
     // --- Estrutura Básica ---
@@ -289,9 +295,17 @@ const HomeScreen = () => {
         setUserProfile(profile as UserProfile);
       }
 
-      // TODO: Adicionar filtro por pets disponíveis ou próximos aqui, se necessário.
       const allPets = await queryDocuments("pets", []);
-      setPets(allPets);
+      
+      // 🚀 Passo 1 da Correção: Carregar o status de favorito para cada pet
+      const petsWithFavorites = await Promise.all(
+        allPets.map(async (pet: any) => ({
+          ...pet,
+          isFavorited: await isPetFavorited(pet.id),
+        }))
+      );
+      setPets(petsWithFavorites);
+
     } catch (error) {
       console.error("❌ Erro ao carregar dados:", error);
     } finally {
@@ -311,15 +325,12 @@ const HomeScreen = () => {
 
   // --- Funções de Navegação (ROTAS COM /) ---
   const handleTabPress = (route: string) => {
-    // A rota "/register-pet" será tratada diretamente no botão,
-    // mas mantemos a lógica da Tab Bar com replace.
-
-    // Apenas as rotas da Tab Bar (que usam replace) são tratadas aqui
     if (route === "/searchScreen") {
       router.replace("/searchScreen" as never);
     } else if (route === "/my-profile") {
       router.replace("/my-profile" as never);
     } else if (route === "/favorites") {
+      // ⚠️ Use push ou replace dependendo do comportamento desejado
       router.replace("/favorites" as never);
     } else if (route === "/homeScreen") {
       router.replace("/homeScreen" as never);
@@ -328,7 +339,8 @@ const HomeScreen = () => {
 
   // Componente para renderizar cada card de pet
   const PetCard = ({ pet, index }: { pet: any; index: number }) => {
-    const [isFavorite, setIsFavorite] = useState(false);
+    // ⭐️ Passo 2 da Correção: Inicializa o estado com o valor carregado
+    const [isFavorite, setIsFavorite] = useState(pet.isFavorited);
 
     const firstImage =
       Array.isArray(pet.images) &&
@@ -339,9 +351,22 @@ const HomeScreen = () => {
         ? pet.image
         : MOCK_USER_PROFILE.imageUri;
 
-    const toggleFavorite = (e: any) => {
+    // 🚀 Passo 3 da Correção: Usa a função de serviço real para salvar
+    const toggleFavorite = async (e: any) => {
       e.stopPropagation();
-      setIsFavorite(!isFavorite);
+      
+      try {
+        // Chama a função do serviço para adicionar/remover do Firebase
+        const newStatus = await toggleFavoriteService(pet.id);
+        
+        // Atualiza o estado local APENAS se a chamada do serviço for bem-sucedida
+        setIsFavorite(newStatus); 
+        
+        // O `FavoritesScreen` irá recarregar automaticamente graças ao useFocusEffect
+        // na próxima vez que for acessado.
+      } catch (error) {
+        console.error("Erro ao favoritar/desfavoritar:", error);
+      }
     };
 
     return (
@@ -510,11 +535,9 @@ const HomeScreen = () => {
           isFocused={currentRoute === "/searchScreen"}
         />
 
-        {/* 🚀 CORREÇÃO APLICADA AQUI: Usando router.push() diretamente no botão. */}
         <TouchableOpacity
           style={styles.addButton}
-          // Usamos 'as any' para forçar o roteamento e contornar a tipagem restritiva do Expo Router
-          onPress={() => router.push("/register-pet" as any)} 
+          onPress={() => router.push("/register-pet" as any)}
         >
           <Ionicons name="add" size={32} color="#333" />
         </TouchableOpacity>

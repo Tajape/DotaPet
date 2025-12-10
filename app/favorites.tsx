@@ -1,5 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { Stack, useFocusEffect, useRouter } from "expo-router";
+// ⭐️ CORREÇÃO PRINCIPAL: useFocusEffect do expo-router
+import { Stack, useFocusEffect, useRouter } from "expo-router"; 
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -21,7 +22,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getFavoritePets, toggleFavorite } from "../services/favoritesService";
 
 // =========================================================================
-// Componente auxiliar para a Tab Bar
+// Componente auxiliar para a Tab Bar (MANTIDO IGUAL)
 // =========================================================================
 
 interface TabItemProps {
@@ -114,6 +115,7 @@ const FavoritesScreen = () => {
   const [favoritePets, setFavoritePets] = useState<Pet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // 🚀 Função de carregamento encapsulada com useCallback
   const loadFavorites = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -125,23 +127,38 @@ const FavoritesScreen = () => {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, []); // A dependência vazia garante que a função seja a mesma a cada renderização
 
+  // ⭐️ CORREÇÃO PRINCIPAL: Recarrega sempre que a tela entra em foco!
+  useFocusEffect(
+    useCallback(() => {
+      loadFavorites();
+      
+      // Retorna uma função de limpeza (opcional, mas boa prática)
+      return () => {
+        // Nada a limpar neste caso, mas manter a estrutura.
+      };
+    }, [loadFavorites]) // Depende de loadFavorites
+  );
+  
+  // O onRefresh está OK
   const onRefresh = async () => {
     setRefreshing(true);
     await loadFavorites();
   };
 
-  useEffect(() => {
-    loadFavorites();
-  }, [loadFavorites]);
+  // O useEffect abaixo pode ser removido pois o useFocusEffect já cobre o primeiro carregamento.
+  // Deixarei comentado para fins de referência:
+  // useEffect(() => {
+  //   loadFavorites();
+  // }, [loadFavorites]);
 
   const handleGoBack = useCallback(() => {
     // Garante que o usuário volte para a Home
     router.replace("homeScreen" as never);
   }, [router]);
 
-  // ⭐ NOVO: Handle do botão de voltar do sistema
+  // ⭐ Handle do botão de voltar do sistema (Mantido Igual)
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -175,10 +192,12 @@ const FavoritesScreen = () => {
     animation: "none" as const,
   };
 
+  // 🚀 Melhoria: O handleRemoveFavorite agora também atualiza o estado local, 
+  // o que garante a atualização instantânea APÓS a remoção
   const handleRemoveFavorite = async (petId: string) => {
     try {
       await toggleFavorite(petId);
-      // Atualizar a lista removendo o pet desfavoritado
+      // ✅ ATUALIZAÇÃO INSTANTÂNEA: Filtra o pet removido da lista local
       setFavoritePets((prev) => prev.filter((pet) => pet.id !== petId));
     } catch (error) {
       console.error("Erro ao remover favorito:", error);
@@ -335,7 +354,7 @@ const FavoritesScreen = () => {
 };
 
 // =========================================================================
-// ESTILOS
+// ESTILOS (MANTIDOS IGUAIS)
 // =========================================================================
 
 const getStyles = (
