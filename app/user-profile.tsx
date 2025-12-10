@@ -17,8 +17,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { getDocument, updateDocument, uploadFile } from "../firebase";
+import { getDocument, updateDocument } from "../firebase";
 import { getCurrentUser } from "../services/authService";
+import { uploadUserImage } from "../services/supabaseStorage";
 
 // =========================================================================
 // 1. COMPONENTE PRINCIPAL (UserProfileScreen)
@@ -132,15 +133,11 @@ const UserProfileScreen = () => {
         return;
       }
 
-      // If profileImage is a local URI (picked from device), upload to Storage
+      // If profileImage is a local URI (picked from device), upload to Supabase Storage
       let profileImageUrl = profileImage || null;
       try {
         if (profileImage && !profileImage.startsWith('http')) {
-          // create a storage path (keep extension if possible)
-          const extMatch = profileImage.split('.').pop();
-          const ext = extMatch && extMatch.length <= 5 ? extMatch : 'jpg';
-          const storagePath = `profiles/${user.uid}.${ext}`;
-          profileImageUrl = await uploadFile(storagePath, profileImage);
+          profileImageUrl = await uploadUserImage(profileImage, user.uid);
         }
       } catch (uploadErr) {
         console.warn('Falha ao enviar imagem, continuando sem imagem:', uploadErr);
