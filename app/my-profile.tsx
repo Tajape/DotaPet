@@ -2,22 +2,22 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
-    Alert,
-    BackHandler,
-    Dimensions,
-    Image,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  BackHandler,
+  Dimensions,
+  Image,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getDocument } from "../firebase";
-import { getCurrentUser } from "../services/authService";
+import { getCurrentUser, logoutUser } from "../services/authService";
 
 // Interface para dados de perfil
 interface UserProfile {
@@ -172,8 +172,13 @@ const MyProfileScreen = () => {
         // Botão 'Sim, Sair'
         {
           text: "Sim, Sair",
-          onPress: () => {
-            // ROTA CORRIGIDA PARA "/welcome"
+          onPress: async () => {
+            try {
+              await logoutUser();
+            } catch (error) {
+              console.error("Erro ao deslogar:", error);
+            }
+            // Após deslogar, navega para a tela de boas-vindas
             router.replace("/welcome" as never);
           },
           style: "destructive",
