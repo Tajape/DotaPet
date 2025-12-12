@@ -70,8 +70,8 @@ export default function RootLayout() {
                     {/* O Stack.Screen usa o nome do arquivo (sem a extensão .tsx) */}
 
                     {isAuthenticated ? (
-                        // 1. SE LOGADO: Mostra a navegação principal (abas/tabs)
-                        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                        // 1. SE LOGADO: Vai direto para a Home principal
+                        <Stack.Screen name="homeScreen" options={{ headerShown: false }} />
                     ) : (
                         // 2. SE DESLOGADO: Mostra a tela de Boas-Vindas
                         <Stack.Screen
@@ -84,7 +84,6 @@ export default function RootLayout() {
                     <Stack.Screen name="login" options={{ headerShown: false }} />
                     <Stack.Screen name="register" options={{ headerShown: false }} />
                     <Stack.Screen name="user-profile" options={{ headerShown: false }} />
-                    <Stack.Screen name="homeScreen" options={{ headerShown: false }} />
                     <Stack.Screen name="favorites" options={{ headerShown: false }} />
                     <Stack.Screen name="my-profile" options={{ headerShown: false }} />
                     <Stack.Screen name="searchScreen" options={{ headerShown: false }} />
