@@ -4,9 +4,6 @@ import React, { useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
-    Dimensions,
-    Image,
-    ImageSourcePropType,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -14,53 +11,21 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { loginUser } from '../services/authService';
 
-// Define a largura da tela para uso em estilos responsivos (Embora não usado diretamente no estilo abaixo, é útil manter)
-const { width } = Dimensions.get('window');
-
-// --- ATENÇÃO: IMPORTAÇÃO DAS IMAGENS/ÍCONES ---
-// Use os caminhos corretos para seus assets
-// Usando 'any' temporariamente se o caminho exato não for resolvido automaticamente pelo ambiente
-const googleIconSource: ImageSourcePropType = require('../assets/images/icone-google.png');
-const facebookIconSource: ImageSourcePropType = require('../assets/images/icone-facebook.png');
-// ------------------------------------------------
+// Dimensões da tela para uso em estilos responsivos
+// const screenDimensions = Dimensions.get('window');
 
 // =========================================================================
 // 1. CONSTANTES DE ÍCONES (IMAGEM)
 // =========================================================================
 
-const GoogleIcon = () => (
-  <Image source={googleIconSource} style={styles.socialIconImage} />
-);
-
-const FacebookIcon = () => (
-  <Image source={facebookIconSource} style={styles.socialIconImage} />
-);
-
 // =========================================================================
 // 2. INTERFACES E COMPONENTES REUTILIZÁVEIS
 // =========================================================================
-
-interface SocialButtonProps {
-  IconComponent: React.FC; 
-  title: string;
-  onPress: () => void;
-}
-
-const SocialButton: React.FC<SocialButtonProps> = ({
-  IconComponent,
-  title,
-  onPress,
-}) => (
-  <TouchableOpacity style={styles.socialButton} onPress={onPress}>
-    <IconComponent />
-    <Text style={styles.socialButtonText}>{title}</Text>
-  </TouchableOpacity>
-);
 
 // =========================================================================
 // 3. COMPONENTE PRINCIPAL (TelaLogin)
@@ -90,7 +55,8 @@ const TelaLogin = () => {
         router.replace('homeScreen' as never);
       }, 500);
     } catch (error: any) {
-      Alert.alert('Erro de Login', 'Verifique se o email ou senha estão corretos.');
+      const errorMessage = error.message || 'Verifique se o email ou senha estão corretos.';
+      Alert.alert('Erro de Login', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -104,11 +70,6 @@ const TelaLogin = () => {
   const handleGoBack = () => {
     router.back();
   };
-
-  // Funções de login social (apenas logs para este exemplo)
-  const handleGoogleLogin = () => { console.log('Login com Google'); };
-  const handleFacebookLogin = () => { console.log('Login com Facebook'); };
-
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -164,7 +125,6 @@ const TelaLogin = () => {
             style={styles.toggleButton}
             onPress={() => setIsPasswordVisible(!isPasswordVisible)}
             activeOpacity={0.7}
-            pointerEvents="box-only"
           >
             <Ionicons 
               name={isPasswordVisible ? "eye-off" : "eye"} 
@@ -194,27 +154,6 @@ const TelaLogin = () => {
             <Text style={styles.loginButtonText}>Entrar</Text>
           )}
         </TouchableOpacity>
-
-        {/* Separador "ou" */}
-        <View style={styles.separatorContainer}>
-          <View style={styles.separatorLine} />
-          <Text style={styles.separatorText}>ou</Text>
-          <View style={styles.separatorLine} />
-        </View>
-
-        {/* Botões de Login Social */}
-        <View style={styles.socialLoginArea}>
-          <SocialButton
-            IconComponent={GoogleIcon}
-            title="Continuar com Google"
-            onPress={handleGoogleLogin}
-          />
-          <SocialButton
-            IconComponent={FacebookIcon}
-            title="Continuar com Facebook"
-            onPress={handleFacebookLogin}
-          />
-        </View>
         </View>
       </ScrollView>
       </KeyboardAvoidingView>

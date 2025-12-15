@@ -2,18 +2,18 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { registerUser } from '../services/authService';
 
@@ -175,26 +175,8 @@ const RegisterScreen = () => {
             {isLoading ? (
               <ActivityIndicator color="#333" />
             ) : (
-              <Text style={styles.registerButtonText}>Entrar</Text>
+              <Text style={styles.registerButtonText}>Cadastrar</Text>
             )}
-          </TouchableOpacity>
-
-          {/* Linha separadora "ou" */}
-          <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>ou</Text>
-            <View style={styles.dividerLine} />
-          </View>
-          
-          {/* Botões de Login Social (Usando Ionicons como placeholder) */}
-          <TouchableOpacity style={[styles.socialButton, { marginBottom: 15 }]} activeOpacity={0.8}>
-            <Ionicons name="logo-google" size={20} color="#333" />
-            <Text style={styles.socialButtonText}>Continuar com Google</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.socialButton} activeOpacity={0.8}>
-            <Ionicons name="logo-facebook" size={20} color="#333" />
-            <Text style={styles.socialButtonText}>Continuar com Facebook</Text>
           </TouchableOpacity>
 
         </View>
@@ -296,53 +278,26 @@ const styles = StyleSheet.create({
   // --- Botão Principal ---
   registerButton: {
     width: '100%',
-    paddingVertical: 15,
+    minHeight: 50,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     borderRadius: 5,
     backgroundColor: '#FFC837', 
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 30,
+    borderWidth: 1,
+    borderColor: '#CCC',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   registerButtonText: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
-  },
-  
-  // --- Separador "ou" ---
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 30,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#DDD',
-  },
-  dividerText: {
-    marginHorizontal: 15,
-    fontSize: 16,
-    color: '#999',
-  },
-
-  // --- Botões Sociais ---
-  socialButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 50,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#CCC',
-    backgroundColor: '#fff',
-    paddingHorizontal: 20,
-  },
-  socialButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-    marginLeft: 10,
   },
 });
 
