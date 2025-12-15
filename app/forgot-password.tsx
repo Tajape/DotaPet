@@ -1,16 +1,18 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Stack, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  StatusBar,
-  Alert,
+    ActivityIndicator,
+    Alert,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Ionicons from '@expo/vector-icons/Ionicons'; 
+import { resetPassword } from '../services/authService';
 
 // =========================================================================
 // COMPONENTE PRINCIPAL (ForgotPasswordScreen)
@@ -18,25 +20,32 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 const ForgotPasswordScreen = () => {
   const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const router = useRouter();
 
-  // --- Função de Ação ---
-  const handleSendRecoveryCode = () => {
+  // --- Função para enviar email de redefinição ---
+  const handleSendRecoveryCode = async () => {
     if (!email || !email.includes('@')) {
       Alert.alert('Atenção', 'Por favor, insira um e-mail válido.');
       return;
     }
     
-    console.log('Solicitação de recuperação enviada para:', email);
+    setIsLoading(true);
     
-    // Simulação de envio bem-sucedido (sem pop-up, para UX limpa)
-    
-    // 🎯 MUDANÇA: Navega para a tela de Verificação de Código
-    // Assumindo que a próxima tela está em '/verify-code'
-    router.push('/verify-code');
-    
-    // Opcional: Você pode manter um Alert para depuração ou feedback, mas o ideal é navegar
-    // Alert.alert('Sucesso', `Código enviado. Verifique seu e-mail.`);
+    try {
+      await resetPassword(email);
+      setEmailSent(true);
+      
+    } catch (error: any) {
+      console.error('Erro ao enviar email de redefinição:', error);
+      Alert.alert(
+        'Erro',
+        'Não foi possível enviar o email de redefinição. Verifique se o email está correto e tente novamente.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoBack = () => {
@@ -78,9 +87,33 @@ const ForgotPasswordScreen = () => {
         />
 
         {/* Botão Enviar */}
-        <TouchableOpacity style={styles.sendButton} onPress={handleSendRecoveryCode}>
-          <Text style={styles.sendButtonText}>Enviar</Text>
-        </TouchableOpacity>
+        {emailSent ? (
+          <View style={styles.successMessage}>
+            <Ionicons name="checkmark-circle" size={24} color="#4CAF50" style={styles.successIcon} />
+            <Text style={styles.successText}>
+              Enviamos um link de recuperação para seu e-mail.
+              {'\n'}Verifique sua caixa de entrada e spam.
+            </Text>
+            <TouchableOpacity 
+              style={[styles.backToLoginButton]}
+              onPress={() => router.replace('/login')}
+            >
+              <Text style={styles.backToLoginText}>Voltar para o login</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity 
+            style={[styles.sendButton, isLoading && styles.disabledButton]} 
+            onPress={handleSendRecoveryCode}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.sendButtonText}>Enviar</Text>
+            )}
+          </TouchableOpacity>
+        )}
 
       </View>
     </SafeAreaView>
@@ -156,12 +189,50 @@ const styles = StyleSheet.create({
   
   // --- Botão Enviar (Mesmo estilo do Botão Login) ---
   sendButton: {
-    width: '100%',
-    paddingVertical: 15,
-    borderRadius: 5,
-    backgroundColor: '#FFC837', 
+    backgroundColor: '#FFC837',
+    padding: 15,
+    borderRadius: 8,
     alignItems: 'center',
-    justifyContent: 'center',
+    marginTop: 30,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  successMessage: {
+    alignItems: 'center',
+    marginTop: 20,
+    padding: 20,
+    backgroundColor: '#f0f9f0',
+    borderRadius: 8,
+    width: '100%',
+  },
+  successIcon: {
+    marginBottom: 12,
+  },
+  successText: {
+    color: '#2E7D32',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+  backToLoginButton: {
+    backgroundColor: '#2196F3',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    width: '100%',
+  },
+  backToLoginText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  disabledButton: {
+    backgroundColor: '#cccccc',
+    opacity: 0.7,
   },
   sendButtonText: {
     fontSize: 18,

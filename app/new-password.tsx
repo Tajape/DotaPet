@@ -1,16 +1,17 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  StatusBar,
   StyleSheet,
-  View,
   Text,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
-  Alert,
+  View,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
-import Ionicons from '@expo/vector-icons/Ionicons'; 
 
 // =========================================================================
 // COMPONENTE PRINCIPAL (NewPasswordScreen)
@@ -19,61 +20,83 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 const NewPasswordScreen = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
-  // 🎯 NOVOS ESTADOS para controlar a visibilidade da senha
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Estados para controlar a visibilidade da senha
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
-  
-  const router = useRouter();
 
-  // --- Função de Ação ---
-  const handleResetPassword = () => {
+  const router = useRouter();
+  const { code } = useLocalSearchParams<{ code?: string }>();
+
+  // --- Função para redefinir a senha ---
+  const handleResetPassword = async () => {
     if (password.length < 6) {
       Alert.alert('Atenção', 'A senha deve ter pelo menos 6 caracteres.');
       return;
     }
-    
+
     if (password !== confirmPassword) {
       Alert.alert('Erro', 'As senhas não coincidem!');
       return;
     }
-    
-    console.log('Nova senha definida com sucesso.');
-    
-    // Alerta de sucesso antes de redirecionar para Login
-    Alert.alert(
-      'Sucesso!', 
-      'Sua senha foi atualizada. Faça login com a nova senha.',
-      [
-        {
-          text: 'Ok',
-          // Redireciona para a tela de Login
-          onPress: () => router.replace('/login'), 
-        }
-      ]
-    );
+
+    if (!code) {
+      Alert.alert('Erro', 'Código de redefinição inválido. Tente novamente.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Importa as funções necessárias do authService
+      const { confirmReset } = await import('../services/authService');
+
+      // Confirma a redefinição de senha
+      await confirmReset(code, password);
+
+      // Alerta de sucesso antes de redirecionar para Login
+      Alert.alert(
+        'Sucesso!',
+        'Sua senha foi atualizada com sucesso. Faça login com a nova senha.',
+        [
+          {
+            text: 'Ok',
+            onPress: () => router.replace('/login'),
+          }
+        ]
+      );
+    } catch (error: any) {
+      console.error('Erro ao redefinir senha:', error);
+      Alert.alert(
+        'Erro',
+        'Não foi possível redefinir a senha. O link pode ter expirado ou ser inválido. Tente novamente.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoBack = () => {
     router.back();
   };
 
-  // 🎯 COMPONENTE DE INPUT DE SENHA REUTILIZÁVEL (Similar ao de Cadastro/Login)
-  const PasswordInput = ({ 
-      label, 
-      value, 
-      onChangeText, 
-      placeholder, 
-      isVisible, 
-      toggleVisibility 
-    }: {
-      label: string;
-      value: string;
-      onChangeText: (text: string) => void;
-      placeholder: string;
-      isVisible: boolean;
-      toggleVisibility: () => void;
-    }) => (
+  // COMPONENTE DE INPUT DE SENHA REUTILIZÁVEL (Similar ao de Cadastro/Login)
+  const PasswordInput = ({
+    label,
+    value,
+    onChangeText,
+    placeholder,
+    isVisible,
+    toggleVisibility,
+  }: {
+    label: string;
+    value: string;
+    onChangeText: (text: string) => void;
+    placeholder: string;
+    isVisible: boolean;
+    toggleVisibility: () => void;
+  }) => (
     <>
       {/* O marginTop do label é o único ajuste necessário para o espaçamento vertical */}
       <Text style={[styles.label, { marginTop: label === 'Nova Senha' ? 30 : 15 }]}>{label}</Text>
@@ -86,14 +109,14 @@ const NewPasswordScreen = () => {
           onChangeText={onChangeText}
           secureTextEntry={!isVisible} // Controlado pelo estado
         />
-        <TouchableOpacity 
-          style={styles.toggleButton} 
+        <TouchableOpacity
+          style={styles.toggleButton}
           onPress={toggleVisibility}
         >
-          <Ionicons 
-            name={isVisible ? "eye-off" : "eye"} 
-            size={24} 
-            color="#999" 
+          <Ionicons
+            name={isVisible ? "eye-off" : "eye"}
+            size={24}
+            color="#999"
           />
         </TouchableOpacity>
       </View>
@@ -117,7 +140,7 @@ const NewPasswordScreen = () => {
       </View>
 
       <View style={styles.contentContainer}>
-        {/* 🎯 Input: Nova Senha COM OLHINHO */}
+        {/* Input: Nova Senha COM OLHINHO */}
         <PasswordInput
           label="Nova Senha"
           value={password}
@@ -127,7 +150,7 @@ const NewPasswordScreen = () => {
           toggleVisibility={() => setIsPasswordVisible(!isPasswordVisible)}
         />
 
-        {/* 🎯 Input: Confirme a Senha COM OLHINHO */}
+        {/* Input: Confirme a Senha COM OLHINHO */}
         <PasswordInput
           label="Confirme a Senha"
           value={confirmPassword}
@@ -136,16 +159,20 @@ const NewPasswordScreen = () => {
           isVisible={isConfirmPasswordVisible}
           toggleVisibility={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
         />
-        
+
         {/* Botão Salvar Senha */}
-        <TouchableOpacity 
-          style={styles.resetButton} 
+        <TouchableOpacity
+          style={[styles.resetButton, isLoading && styles.disabledButton]}
           onPress={handleResetPassword}
           activeOpacity={0.8}
+          disabled={isLoading}
         >
-          <Text style={styles.resetButtonText}>Salvar Senha</Text>
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.resetButtonText}>Salvar Senha</Text>
+          )}
         </TouchableOpacity>
-
       </View>
     </SafeAreaView>
   );
@@ -164,17 +191,17 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     paddingHorizontal: 30,
-    paddingTop: 0, 
+    paddingTop: 0,
   },
-  
+
   // --- Cabeçalho (Header) ---
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 15,
-    paddingTop: 30, 
-    paddingBottom: 35, 
+    paddingTop: 30,
+    paddingBottom: 35,
   },
   backButton: {
     width: 44,
@@ -182,7 +209,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backButtonPlaceholder: {
-    width: 44, 
+    width: 44,
     height: 44,
     opacity: 0,
   },
@@ -191,7 +218,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 24, 
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
@@ -204,8 +231,8 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 8,
   },
-  
-  // 🎯 NOVOS ESTILOS PARA INPUT COM SENHA (Olhinho)
+
+  // NOVOS ESTILOS PARA INPUT COM SENHA (Olhinho)
   passwordInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -225,22 +252,23 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
   },
-  // ------------------------------------
-  
+
   // --- Botão Salvar Senha ---
   resetButton: {
-    width: '100%',
-    paddingVertical: 15,
-    borderRadius: 5,
-    backgroundColor: '#FFC837', 
+    backgroundColor: '#FFC837',
+    padding: 15,
+    borderRadius: 8,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 50,
+    marginTop: 30,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  resetButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+  disabledButton: {
+    backgroundColor: '#cccccc',
+    opacity: 0.7,
   },
 });
 

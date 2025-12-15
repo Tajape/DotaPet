@@ -1,17 +1,18 @@
-import React, { useState, useRef, createRef } from 'react';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { createRef, useRef, useState } from 'react';
 import {
-  StyleSheet,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
-  Alert,
-  Keyboard,
+    ActivityIndicator,
+    Alert,
+    Keyboard,
+    SafeAreaView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
-import Ionicons from '@expo/vector-icons/Ionicons'; 
 
 const CODE_LENGTH = 4;
 
@@ -22,11 +23,15 @@ const CODE_LENGTH = 4;
 const VerifyCodeScreen = () => {
   // Estado para armazenar o código como array de dígitos
   const [code, setCode] = useState<string[]>(Array(CODE_LENGTH).fill(''));
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { email } = useLocalSearchParams<{ email: string }>();
 
   // Array de refs para controlar o foco dos 4 inputs
-  const inputRefs = useRef<Array<React.RefObject<TextInput>>>(
-    Array(CODE_LENGTH).fill(0).map(() => createRef<TextInput>())
+  const inputRefs = useRef(
+    Array(CODE_LENGTH)
+      .fill(0)
+      .map(() => createRef<TextInput>())
   );
 
   // Lógica para preencher o dígito e mover o foco para o próximo campo
@@ -57,21 +62,35 @@ const VerifyCodeScreen = () => {
     }
   };
 
-
-  const handleVerifyCode = () => {
+  const handleVerifyCode = async () => {
     const fullCode = code.join('');
 
     if (fullCode.length !== CODE_LENGTH) {
       Alert.alert('Atenção', `O código deve ter ${CODE_LENGTH} dígitos.`);
       return;
     }
-    
+
     Keyboard.dismiss();
-    console.log('Código Verificado:', fullCode);
-    
-    // 🎯 AÇÃO FINAL: Redirecionar diretamente para a tela de Nova Senha
-    // (Removendo o Alert de "Sucesso")
-    router.push('/new-password'); 
+    setIsLoading(true);
+
+    try {
+      // Navega para a tela de nova senha com o código e email
+      router.push({
+        pathname: '/new-password',
+        params: {
+          code: fullCode,
+          email: email || '',
+        },
+      });
+    } catch (error) {
+      console.error('Erro ao verificar código:', error);
+      Alert.alert(
+        'Erro',
+        'Não foi possível verificar o código. Verifique se o código está correto e tente novamente.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoBack = () => {
@@ -110,20 +129,27 @@ const VerifyCodeScreen = () => {
               value={digit}
               onChangeText={(text) => handleCodeChange(text, index)}
               onKeyPress={(e) => handleKeyPress(e, index)}
-              keyboardType="number-pad" 
-              maxLength={1} 
-              textAlign="center" 
+              keyboardType="number-pad"
+              maxLength={1}
+              textAlign="center"
               autoFocus={index === 0}
-              selectionColor="#FFC837" 
+              selectionColor="#FFC837"
             />
           ))}
         </View>
-        
-        {/* Botão Enviar */}
-        <TouchableOpacity style={styles.sendButton} onPress={handleVerifyCode}>
-          <Text style={styles.sendButtonText}>Enviar</Text>
-        </TouchableOpacity>
 
+        {/* Botão Enviar */}
+        <TouchableOpacity
+          style={[styles.sendButton, isLoading && styles.disabledButton]}
+          onPress={handleVerifyCode}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.sendButtonText}>Verificar</Text>
+          )}
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -144,14 +170,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     paddingTop: 20,
   },
-  
+
   // --- Cabeçalho (Header) ---
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 15,
-    paddingTop: 30,    // Aumentado para descer o conteúdo
+    paddingTop: 30, // Aumentado para descer o conteúdo
     paddingBottom: 35, // Aumentado para manter o respiro
   },
   backButton: {
@@ -160,7 +186,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backButtonPlaceholder: {
-    width: 44, 
+    width: 44,
     height: 44,
     opacity: 0,
   },
@@ -169,7 +195,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 24, 
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
@@ -190,7 +216,7 @@ const styles = StyleSheet.create({
     marginBottom: 60,
   },
   codeInput: {
-    width: 60, 
+    width: 60,
     height: 60,
     borderColor: '#CCC',
     borderWidth: 1,
@@ -200,17 +226,21 @@ const styles = StyleSheet.create({
     color: '#333',
     backgroundColor: '#F7F7F7', // Fundo sutilmente cinza
     textAlign: 'center',
-    shadowColor: 'transparent', 
+    shadowColor: 'transparent',
   },
-  
+
   // --- Botão Enviar ---
   sendButton: {
     width: '100%',
     paddingVertical: 15,
     borderRadius: 5,
-    backgroundColor: '#FFC837', 
+    backgroundColor: '#FFC837',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  disabledButton: {
+    backgroundColor: '#cccccc',
+    opacity: 0.7,
   },
   sendButtonText: {
     fontSize: 18,
